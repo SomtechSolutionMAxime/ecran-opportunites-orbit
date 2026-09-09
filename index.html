@@ -6,534 +6,818 @@
   <title>Orbit — Opportunités (maquette)</title>
   <script src="https://unpkg.com/react@18.3.1/umd/react.production.min.js" integrity="sha384-DGyLxAyjq0f9SPpVevD6IgztCFlnMF6oW/XQGmfe+IsZ8TqEiDrcHkMLKI6fiB/Z" crossorigin="anonymous"></script>
   <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.production.min.js" integrity="sha384-gTGxhz21lVGYNMcdJOyq01Edg0jhn/c22nsx0kyqP0TxaV5WVdsSH1fSDUf5YJj1" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/prop-types@15.8.1/prop-types.min.js" integrity="sha384-/AfDwVDXNopzPvhxMPQ11y1OCpR6mVkWx47qzSwIiquvxkcMkZddEzDNtIOtfCpk" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/recharts@2.12.7/umd/Recharts.js" integrity="sha384-d1XH4LhwLW8j0l6VXMP8yJabdGY9ZqtZk7k7PaPk5NoUCcZ/hDkL5aaKioKQbcZg" crossorigin="anonymous"></script>
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
     body { font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
-    .scroll-thin::-webkit-scrollbar { height: 8px; width: 8px; }
-    .scroll-thin::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
-    @keyframes fadein { from { opacity: 0; transform: translateY(6px);} to { opacity: 1; transform: none;} }
-    .fadein { animation: fadein .18s ease-out; }
+    input[type=range] { accent-color: #111827; }
   </style>
 </head>
-<body class="bg-slate-100 text-slate-800">
+<body class="bg-gray-50 text-gray-900">
   <div id="root"></div>
   <script>
 const { useState, useMemo, useEffect } = React;
 const h = React.createElement;
+const RC = window.Recharts || {};
 
 // ============================================================
-// ICONS
+// ICÔNES (lucide, inline)
 // ============================================================
 const createIcon = (paths) => function Icon(props) {
-  const { className = '', size = 18, ...rest } = props || {};
-  return h('svg', { xmlns: 'http://www.w3.org/2000/svg', width: size, height: size, viewBox: '0 0 24 24',
+  const { className = '', size, ...rest } = props || {};
+  return h('svg', { xmlns: 'http://www.w3.org/2000/svg', width: size || 24, height: size || 24, viewBox: '0 0 24 24',
     fill: 'none', stroke: 'currentColor', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round', className, ...rest },
     ...paths.map((p, i) => typeof p === 'string' ? h('path', { key: i, d: p }) : h(p.tag, { key: i, ...p.attrs })));
 };
-const Search = createIcon([{tag:'circle',attrs:{cx:11,cy:11,r:8}},{tag:'line',attrs:{x1:21,y1:21,x2:16.65,y2:16.65}}]);
-const Plus = createIcon([{tag:'line',attrs:{x1:12,y1:5,x2:12,y2:19}},{tag:'line',attrs:{x1:5,y1:12,x2:19,y2:12}}]);
-const X = createIcon([{tag:'line',attrs:{x1:18,y1:6,x2:6,y2:18}},{tag:'line',attrs:{x1:6,y1:6,x2:18,y2:18}}]);
-const ChevronRight = createIcon([{tag:'polyline',attrs:{points:'9 18 15 12 9 6'}}]);
-const Download = createIcon([{tag:'path',attrs:{d:'M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4'}},{tag:'polyline',attrs:{points:'7 10 12 15 17 10'}},{tag:'line',attrs:{x1:12,y1:15,x2:12,y2:3}}]);
-const AlertTriangle = createIcon(['M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z',{tag:'line',attrs:{x1:12,y1:9,x2:12,y2:13}},{tag:'line',attrs:{x1:12,y1:17,x2:12.01,y2:17}}]);
-const Clock = createIcon([{tag:'circle',attrs:{cx:12,cy:12,r:10}},{tag:'polyline',attrs:{points:'12 6 12 12 16 14'}}]);
-const TrendingUp = createIcon([{tag:'polyline',attrs:{points:'23 6 13.5 15.5 8.5 10.5 1 18'}},{tag:'polyline',attrs:{points:'17 6 23 6 23 12'}}]);
-const DollarSign = createIcon([{tag:'line',attrs:{x1:12,y1:1,x2:12,y2:23}},{tag:'path',attrs:{d:'M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6'}}]);
-const Check = createIcon([{tag:'polyline',attrs:{points:'20 6 9 17 4 12'}}]);
-const Archive = createIcon([{tag:'polyline',attrs:{points:'21 8 21 21 3 21 3 8'}},{tag:'rect',attrs:{width:23,height:5,x:.5,y:3,rx:1}},{tag:'line',attrs:{x1:10,y1:12,x2:14,y2:12}}]);
-const Edit3 = createIcon([{tag:'path',attrs:{d:'M12 20h9'}},{tag:'path',attrs:{d:'M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z'}}]);
-const FileText = createIcon([{tag:'path',attrs:{d:'M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z'}},{tag:'polyline',attrs:{points:'14 2 14 8 20 8'}},{tag:'line',attrs:{x1:16,y1:13,x2:8,y2:13}},{tag:'line',attrs:{x1:16,y1:17,x2:8,y2:17}}]);
-const Briefcase = createIcon([{tag:'rect',attrs:{width:20,height:14,x:2,y:7,rx:2,ry:2}},{tag:'path',attrs:{d:'M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16'}}]);
-const CheckSquare = createIcon([{tag:'polyline',attrs:{points:'9 11 12 14 22 4'}},{tag:'path',attrs:{d:'M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11'}}]);
-const Building = createIcon([{tag:'rect',attrs:{x:4,y:2,width:16,height:20,rx:2}},{tag:'path',attrs:{d:'M9 22v-4h6v4'}},{tag:'path',attrs:{d:'M8 6h.01M16 6h.01M12 6h.01M12 10h.01M12 14h.01M16 10h.01M16 14h.01M8 10h.01M8 14h.01'}}]);
-const User = createIcon([{tag:'path',attrs:{d:'M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2'}},{tag:'circle',attrs:{cx:12,cy:7,r:4}}]);
-const LayoutGrid = createIcon([{tag:'rect',attrs:{width:7,height:7,x:3,y:3,rx:1}},{tag:'rect',attrs:{width:7,height:7,x:14,y:3,rx:1}},{tag:'rect',attrs:{width:7,height:7,x:14,y:14,rx:1}},{tag:'rect',attrs:{width:7,height:7,x:3,y:14,rx:1}}]);
-const ListIcon = createIcon([{tag:'line',attrs:{x1:8,y1:6,x2:21,y2:6}},{tag:'line',attrs:{x1:8,y1:12,x2:21,y2:12}},{tag:'line',attrs:{x1:8,y1:18,x2:21,y2:18}},{tag:'line',attrs:{x1:3,y1:6,x2:3.01,y2:6}},{tag:'line',attrs:{x1:3,y1:12,x2:3.01,y2:12}},{tag:'line',attrs:{x1:3,y1:18,x2:3.01,y2:18}}]);
-const Home = createIcon(['m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z',{tag:'polyline',attrs:{points:'9 22 9 12 15 12 15 22'}}]);
-const Users = createIcon([{tag:'path',attrs:{d:'M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2'}},{tag:'circle',attrs:{cx:9,cy:7,r:4}},{tag:'path',attrs:{d:'M22 21v-2a4 4 0 0 0-3-3.87'}},{tag:'path',attrs:{d:'M16 3.13a4 4 0 0 1 0 7.75'}}]);
-const Target = createIcon([{tag:'circle',attrs:{cx:12,cy:12,r:10}},{tag:'circle',attrs:{cx:12,cy:12,r:6}},{tag:'circle',attrs:{cx:12,cy:12,r:2}}]);
-const Receipt = createIcon(['M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1Z','M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8']);
-const MoreHorizontal = createIcon([{tag:'circle',attrs:{cx:12,cy:12,r:1}},{tag:'circle',attrs:{cx:19,cy:12,r:1}},{tag:'circle',attrs:{cx:5,cy:12,r:1}}]);
-const Phone = createIcon([{tag:'path',attrs:{d:'M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z'}}]);
-const Mail = createIcon([{tag:'rect',attrs:{width:20,height:16,x:2,y:4,rx:2}},{tag:'path',attrs:{d:'m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7'}}]);
-const Calendar = createIcon([{tag:'rect',attrs:{width:18,height:18,x:3,y:4,rx:2,ry:2}},{tag:'line',attrs:{x1:16,y1:2,x2:16,y2:6}},{tag:'line',attrs:{x1:8,y1:2,x2:8,y2:6}},{tag:'line',attrs:{x1:3,y1:10,x2:21,y2:10}}]);
-const StickyNote = createIcon(['M15.5 3H5a2 2 0 0 0-2 2v14c0 1.1.9 2 2 2h14a2 2 0 0 0 2-2V8.5L15.5 3Z','M15 3v6h6']);
-
-// ============================================================
-// DONNÉES D'EXEMPLE (rien de réel)
-// ============================================================
-const TODAY = new Date('2026-09-09T12:00:00');
-const daysAgo = (n) => { const d = new Date(TODAY); d.setDate(d.getDate() - n); return d; };
-const inDays = (n) => { const d = new Date(TODAY); d.setDate(d.getDate() + n); return d; };
-
-const STAGES = [
-  { id: 'nouveau',       label: 'Nouveau',       color: 'slate',   action: 'Qualifier' },
-  { id: 'qualification', label: 'Qualification', color: 'sky',     action: 'Envoyer une offre' },
-  { id: 'proposition',   label: 'Proposition',   color: 'violet',  action: 'Négocier' },
-  { id: 'negociation',   label: 'Négociation',   color: 'amber',   action: 'Conclure' },
-  { id: 'gagnee',        label: 'Gagnée',        color: 'emerald', action: null },
-  { id: 'perdue',        label: 'Perdue',        color: 'rose',    action: null },
-  { id: 'archivee',      label: 'Archivée',      color: 'gray',    action: null },
-];
-const ACTIVE_STAGES = STAGES.slice(0, 4);
-const STAGE = Object.fromEntries(STAGES.map(s => [s.id, s]));
-const SOURCES = ['Site Web', 'Référencement', 'Référence client', 'Réseautage', 'Autre'];
-const OWNERS = [
-  { id: 'ml', name: 'Maxime Leboeuf', initials: 'ML', color: 'bg-indigo-600' },
-  { id: 'jt', name: 'Julie Tremblay', initials: 'JT', color: 'bg-teal-600' },
-  { id: 'sg', name: 'Simon Gagnon',   initials: 'SG', color: 'bg-orange-600' },
-];
-const OWNER = Object.fromEntries(OWNERS.map(o => [o.id, o]));
-const LOSS_REASONS = ['Prix trop élevé', 'Concurrent retenu', 'Projet abandonné', 'Pas de réponse', 'Mauvais moment', 'Autre'];
-
-let seq = 1;
-const opp = (o) => ({
-  id: 'OPP-' + String(seq++).padStart(3, '0'),
-  contacts: [], offres: [], projets: [], taches: [],
-  ...o,
-});
-
-const INITIAL = [
-  opp({ nom: 'Refonte du portail client', entreprise: 'Construction Gauthier', contact: 'Charles-Olivier Gauthier', etape: 'negociation', valeur: 48000, probabilite: 75, source: 'Référence client', owner: 'ml', lastActivity: daysAgo(2), cloture: inDays(12), createdAt: daysAgo(41),
-    resume: 'Portail de suivi des chantiers pour les clients résidentiels. Offre envoyée, en discussion sur la phase 2.',
-    offres: [{ numero: 'OFF-2026-041', titre: 'Portail client — phase 1', montant: 48000, etape: 'Envoyée' }],
-    taches: [{ titre: 'Relancer sur la phase 2', statut: 'À faire', echeance: inDays(1) }],
-    timeline: [
-      { type: 'appel', date: daysAgo(2), texte: 'Appel avec Charles-Olivier : ok sur le budget phase 1, veut voir un échéancier pour la phase 2.' },
-      { type: 'courriel', date: daysAgo(6), texte: 'Envoi de l’offre OFF-2026-041.' },
-      { type: 'rencontre', date: daysAgo(14), texte: 'Atelier de cadrage sur place (2 h).' },
-      { type: 'note', date: daysAgo(41), texte: 'Opportunité créée à partir d’une référence de Ma Place RH.' },
-    ] }),
-  opp({ nom: 'Module facturation cloud', entreprise: 'Progex Inc.', contact: 'Nathalie Roy', etape: 'proposition', valeur: 32000, probabilite: 50, source: 'Site Web', owner: 'jt', lastActivity: daysAgo(5), cloture: inDays(20), createdAt: daysAgo(28),
-    resume: 'Automatiser la facturation de leurs services cloud. Proposition remise, attente du comité de direction.',
-    offres: [{ numero: 'OFF-2026-044', titre: 'Facturation cloud', montant: 32000, etape: 'Brouillon' }],
-    timeline: [
-      { type: 'courriel', date: daysAgo(5), texte: 'Nathalie confirme la présentation au comité le 18 septembre.' },
-      { type: 'rencontre', date: daysAgo(9), texte: 'Démo de l’approche par registre unifié.' },
-      { type: 'note', date: daysAgo(28), texte: 'Formulaire de contact du site web.' },
-    ] }),
-  opp({ nom: 'Assistant conversationnel RH', entreprise: 'Ma Place RH', contact: 'Isabelle Fortin', etape: 'qualification', valeur: 21000, probabilite: 35, source: 'Réseautage', owner: 'sg', lastActivity: daysAgo(1), cloture: inDays(35), createdAt: daysAgo(12),
-    resume: 'Chatbot interne pour répondre aux questions des employés sur les politiques RH.',
-    taches: [{ titre: 'Préparer le questionnaire de qualification', statut: 'En cours', echeance: inDays(3) }],
-    timeline: [
-      { type: 'appel', date: daysAgo(1), texte: 'Premier appel de découverte — 120 employés, 3 conventions.' },
-      { type: 'note', date: daysAgo(12), texte: 'Rencontrée au 5 à 7 de la Chambre de commerce.' },
-    ] }),
-  opp({ nom: 'Migration ERP vers Orbit', entreprise: 'Atelier Bergeron', contact: 'Marc Bergeron', etape: 'negociation', valeur: 65000, probabilite: 60, source: 'Référence client', owner: 'ml', lastActivity: daysAgo(17), cloture: inDays(8), createdAt: daysAgo(63),
-    resume: 'Remplacement de leur ERP maison. Négociation sur le calendrier de migration des données.',
-    offres: [{ numero: 'OFF-2026-037', titre: 'Migration ERP', montant: 65000, etape: 'Négociée' }],
-    timeline: [
-      { type: 'courriel', date: daysAgo(17), texte: 'Marc demande un délai : fin d’année fiscale.' },
-      { type: 'rencontre', date: daysAgo(24), texte: 'Présentation de l’offre révisée.' },
-    ] }),
-  opp({ nom: 'Tableau de bord KPI production', entreprise: 'Usinage Précis', contact: 'Dominique Lavoie', etape: 'nouveau', valeur: 12000, probabilite: 15, source: 'Site Web', owner: 'jt', lastActivity: daysAgo(0), cloture: inDays(45), createdAt: daysAgo(0),
-    resume: 'Demande reçue ce matin : suivi en temps réel des rejets machine.',
-    timeline: [ { type: 'note', date: daysAgo(0), texte: 'Demande via le formulaire du site.' } ] }),
-  opp({ nom: 'Site transactionnel', entreprise: 'Boulangerie Lévesque', contact: 'Annie Lévesque', etape: 'qualification', valeur: 9500, probabilite: 30, source: 'Référencement', owner: 'sg', lastActivity: daysAgo(33), cloture: inDays(5), createdAt: daysAgo(50),
-    resume: 'Commandes en ligne pour les deux succursales. Sans nouvelle depuis un mois.',
-    timeline: [
-      { type: 'courriel', date: daysAgo(33), texte: 'Relance envoyée, sans réponse.' },
-      { type: 'appel', date: daysAgo(44), texte: 'Appel de découverte : budget serré, veut comparer.' },
-    ] }),
-  opp({ nom: 'Audit Loi 25', entreprise: 'Clinique Santé Plus', contact: 'Dr Louis Pelletier', etape: 'proposition', valeur: 8500, probabilite: 55, source: 'Réseautage', owner: 'ml', lastActivity: daysAgo(3), cloture: inDays(10), createdAt: daysAgo(19),
-    resume: 'Audit de conformité et plan de remédiation. Proposition remise.',
-    offres: [{ numero: 'OFF-2026-046', titre: 'Audit Loi 25', montant: 8500, etape: 'Envoyée' }],
-    timeline: [ { type: 'courriel', date: daysAgo(3), texte: 'Offre envoyée au Dr Pelletier.' }, { type: 'rencontre', date: daysAgo(8), texte: 'Visite de la clinique.' } ] }),
-  opp({ nom: 'Application mobile terrain', entreprise: 'Paysagement Vertdure', contact: 'Éric Bouchard', etape: 'nouveau', valeur: 27000, probabilite: 20, source: 'Autre', owner: 'sg', lastActivity: daysAgo(15), cloture: inDays(60), createdAt: daysAgo(15),
-    resume: 'Feuilles de temps et photos de chantier depuis le téléphone.',
-    timeline: [ { type: 'note', date: daysAgo(15), texte: 'Contact pris au salon Expo Habitat.' } ] }),
-  opp({ nom: 'Intégration Stripe', entreprise: 'Studio Nordik', contact: 'Sophie Caron', etape: 'proposition', valeur: 6000, probabilite: 65, source: 'Site Web', owner: 'jt', lastActivity: daysAgo(4), cloture: inDays(7), createdAt: daysAgo(11),
-    resume: 'Paiement récurrent pour leurs abonnements photo.',
-    offres: [{ numero: 'OFF-2026-047', titre: 'Intégration paiement', montant: 6000, etape: 'Envoyée' }],
-    timeline: [ { type: 'courriel', date: daysAgo(4), texte: 'Sophie a reçu l’offre, revient d’ici vendredi.' } ] }),
-  opp({ nom: 'Portail fournisseurs', entreprise: 'Distribution Roy & Fils', contact: 'Patrick Roy', etape: 'qualification', valeur: 38000, probabilite: 40, source: 'Référence client', owner: 'ml', lastActivity: daysAgo(6), cloture: inDays(40), createdAt: daysAgo(21),
-    resume: 'Portail pour 80 fournisseurs : bons de commande, factures, statuts.',
-    taches: [{ titre: 'Chiffrer l’intégration à leur comptabilité', statut: 'À faire', echeance: inDays(4) }],
-    timeline: [ { type: 'rencontre', date: daysAgo(6), texte: 'Atelier avec l’équipe des achats.' }, { type: 'note', date: daysAgo(21), texte: 'Référé par Construction Gauthier.' } ] }),
-  opp({ nom: 'Refonte intranet', entreprise: 'Coop des Cantons', contact: 'Hélène Dubois', etape: 'gagnee', valeur: 19000, probabilite: 100, source: 'Réseautage', owner: 'jt', lastActivity: daysAgo(9), cloture: daysAgo(9), createdAt: daysAgo(70),
-    resume: 'Gagnée le 31 août. Projet démarré.',
-    projets: [{ nom: 'Intranet Coop des Cantons', statut: 'En cours', budget: 19000 }],
-    timeline: [ { type: 'note', date: daysAgo(9), texte: 'Contrat signé. Projet créé.' } ] }),
-  opp({ nom: 'Système de réservation', entreprise: 'Spa Les Cèdres', contact: 'Marie-Ève Simard', etape: 'perdue', valeur: 14000, probabilite: 0, source: 'Référencement', owner: 'sg', lastActivity: daysAgo(12), cloture: daysAgo(12), createdAt: daysAgo(55),
-    resume: 'Perdue : ont choisi une solution SaaS clé en main.', motifPerte: 'Concurrent retenu',
-    timeline: [ { type: 'appel', date: daysAgo(12), texte: 'Marie-Ève nous informe de leur choix.' } ] }),
-  opp({ nom: 'CRM sur mesure', entreprise: 'Immobilier Deschênes', contact: 'François Deschênes', etape: 'archivee', valeur: 22000, probabilite: 0, source: 'Autre', owner: 'ml', lastActivity: daysAgo(48), cloture: daysAgo(48), createdAt: daysAgo(120),
-    resume: 'Perdue en juillet (projet abandonné), archivée automatiquement après 30 jours.', motifPerte: 'Projet abandonné',
-    timeline: [ { type: 'note', date: daysAgo(18), texte: 'Archivage automatique.' }, { type: 'courriel', date: daysAgo(48), texte: 'Le client met le projet sur la glace.' } ] }),
-];
-
-// ============================================================
-// HELPERS
-// ============================================================
-const fmtMoney = (n) => new Intl.NumberFormat('fr-CA', { style: 'currency', currency: 'CAD', maximumFractionDigits: 0 }).format(n);
-const fmtDate = (d) => d ? new Intl.DateTimeFormat('fr-CA', { day: 'numeric', month: 'short' }).format(d) : '—';
-const fmtDateLong = (d) => d ? new Intl.DateTimeFormat('fr-CA', { day: 'numeric', month: 'long', year: 'numeric' }).format(d) : '—';
-const daysSince = (d) => Math.max(0, Math.round((TODAY - d) / 86400000));
-const daysUntil = (d) => Math.round((d - TODAY) / 86400000);
-const isClosed = (o) => ['gagnee', 'perdue', 'archivee'].includes(o.etape);
-
-// Santé sur 100 : activité récente + probabilité + proximité de la clôture
-function healthScore(o) {
-  if (o.etape === 'gagnee') return 100;
-  if (o.etape === 'perdue' || o.etape === 'archivee') return 0;
-  const inact = daysSince(o.lastActivity);
-  let s = 100;
-  if (inact > 30) s -= 55; else if (inact > 14) s -= 30; else if (inact > 7) s -= 10;
-  s -= Math.round((100 - o.probabilite) * 0.3);
-  const du = daysUntil(o.cloture);
-  if (du < 0) s -= 20; else if (du <= 7 && o.etape !== 'negociation') s -= 10;
-  return Math.max(0, Math.min(100, s));
-}
-const healthLevel = (score) => score >= 70 ? 'bonne' : score >= 40 ? 'attention' : 'critique';
-const HEALTH = {
-  bonne:     { label: 'Bonne',     dot: 'bg-emerald-500', text: 'text-emerald-700', bg: 'bg-emerald-50', ring: 'ring-emerald-200' },
-  attention: { label: 'Attention', dot: 'bg-amber-500',   text: 'text-amber-700',   bg: 'bg-amber-50',   ring: 'ring-amber-200' },
-  critique:  { label: 'Critique',  dot: 'bg-rose-500',    text: 'text-rose-700',    bg: 'bg-rose-50',    ring: 'ring-rose-200' },
-};
-const dormancy = (o) => { if (isClosed(o)) return null; const d = daysSince(o.lastActivity); return d >= 30 ? 'critique' : d >= 14 ? 'attention' : null; };
-
-const STAGE_STYLE = {
-  slate:   { chip: 'bg-slate-100 text-slate-700',   bar: 'bg-slate-400' },
-  sky:     { chip: 'bg-sky-100 text-sky-700',       bar: 'bg-sky-500' },
-  violet:  { chip: 'bg-violet-100 text-violet-700', bar: 'bg-violet-500' },
-  amber:   { chip: 'bg-amber-100 text-amber-800',   bar: 'bg-amber-500' },
-  emerald: { chip: 'bg-emerald-100 text-emerald-700', bar: 'bg-emerald-500' },
-  rose:    { chip: 'bg-rose-100 text-rose-700',     bar: 'bg-rose-500' },
-  gray:    { chip: 'bg-gray-200 text-gray-600',     bar: 'bg-gray-400' },
+const I = {
+  Plus: createIcon(['M5 12h14', 'M12 5v14']),
+  Edit: createIcon(['M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z', 'm15 5 4 4']),
+  Download: createIcon(['M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4', 'M7 10l5 5 5-5', 'M12 15V3']),
+  Eye: createIcon(['M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z', { tag: 'circle', attrs: { cx: 12, cy: 12, r: 3 } }]),
+  Trash2: createIcon(['M3 6h18', 'M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6', 'M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2', 'M10 11v6', 'M14 11v6']),
+  Rocket: createIcon(['M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z', 'm12 15-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z', 'M9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0', 'M12 15v5s3.03-.55 4-2c1.08-1.62 0-5 0-5']),
+  AlertTriangle: createIcon(['m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3', 'M12 9v4', 'M12 17h.01']),
+  AlertCircle: createIcon([{ tag: 'circle', attrs: { cx: 12, cy: 12, r: 10 } }, 'M12 8v4', 'M12 16h.01']),
+  LayoutList: createIcon([{ tag: 'rect', attrs: { width: 7, height: 7, x: 3, y: 3, rx: 1 } }, { tag: 'rect', attrs: { width: 7, height: 7, x: 3, y: 14, rx: 1 } }, 'M14 4h7', 'M14 9h7', 'M14 15h7', 'M14 20h7']),
+  BarChart3: createIcon(['M3 3v18h18', 'M18 17V9', 'M13 17V5', 'M8 17v-3']),
+  Table2: createIcon(['M9 3H5a2 2 0 0 0-2 2v4m6-6h10a2 2 0 0 1 2 2v4M9 3v18m0 0h10a2 2 0 0 0 2-2V9M9 21H5a2 2 0 0 1-2-2V9m0 0h18']),
+  TrendingUp: createIcon(['M22 7 13.5 15.5 8.5 10.5 2 17', 'M16 7h6v6']),
+  TrendingDown: createIcon(['M22 17 13.5 8.5 8.5 13.5 2 7', 'M16 17h6v-6']),
+  DollarSign: createIcon(['M12 2v20', 'M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6']),
+  Target: createIcon([{ tag: 'circle', attrs: { cx: 12, cy: 12, r: 10 } }, { tag: 'circle', attrs: { cx: 12, cy: 12, r: 6 } }, { tag: 'circle', attrs: { cx: 12, cy: 12, r: 2 } }]),
+  Clock: createIcon([{ tag: 'circle', attrs: { cx: 12, cy: 12, r: 10 } }, 'M12 6v6l4 2']),
+  Award: createIcon([{ tag: 'circle', attrs: { cx: 12, cy: 8, r: 6 } }, 'M15.477 12.89 17 22l-5-3-5 3 1.523-9.11']),
+  ChevronDown: createIcon(['m6 9 6 6 6-6']),
+  ChevronUp: createIcon(['m18 15-6-6-6 6']),
+  X: createIcon(['M18 6 6 18', 'm6 6 12 12']),
+  Check: createIcon(['M20 6 9 17l-5-5']),
+  Search: createIcon([{ tag: 'circle', attrs: { cx: 11, cy: 11, r: 8 } }, 'm21 21-4.3-4.3']),
+  Filter: createIcon(['M22 3H2l8 9.46V19l4 2v-8.54L22 3z']),
+  Calendar: createIcon(['M8 2v4', 'M16 2v4', { tag: 'rect', attrs: { width: 18, height: 18, x: 3, y: 4, rx: 2 } }, 'M3 10h18']),
+  Users: createIcon(['M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2', { tag: 'circle', attrs: { cx: 9, cy: 7, r: 4 } }, 'M22 21v-2a4 4 0 0 0-3-3.87', 'M16 3.13a4 4 0 0 1 0 7.75']),
+  User: createIcon(['M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2', { tag: 'circle', attrs: { cx: 12, cy: 7, r: 4 } }]),
+  Bell: createIcon(['M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9', 'M10.3 21a1.94 1.94 0 0 0 3.4 0']),
+  Settings: createIcon(['M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z', { tag: 'circle', attrs: { cx: 12, cy: 12, r: 3 } }]),
+  PanelLeft: createIcon([{ tag: 'rect', attrs: { width: 18, height: 18, x: 3, y: 3, rx: 2 } }, 'M9 3v18']),
+  Orbit: createIcon([{ tag: 'circle', attrs: { cx: 12, cy: 12, r: 3 } }, { tag: 'circle', attrs: { cx: 19, cy: 5, r: 2 } }, { tag: 'circle', attrs: { cx: 5, cy: 19, r: 2 } }, 'M10.4 21.9a10 10 0 0 0 9.941-15.416', 'M13.5 2.1a10 10 0 0 0-9.841 15.416']),
+  LayoutDashboard: createIcon([{ tag: 'rect', attrs: { width: 7, height: 9, x: 3, y: 3, rx: 1 } }, { tag: 'rect', attrs: { width: 7, height: 5, x: 14, y: 3, rx: 1 } }, { tag: 'rect', attrs: { width: 7, height: 9, x: 14, y: 12, rx: 1 } }, { tag: 'rect', attrs: { width: 7, height: 5, x: 3, y: 16, rx: 1 } }]),
+  Link2: createIcon(['M9 17H7A5 5 0 0 1 7 7h2', 'M15 7h2a5 5 0 1 1 0 10h-2', 'M8 12h8']),
+  MessageSquare: createIcon(['M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z']),
+  FileText: createIcon(['M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z', 'M14 2v4a2 2 0 0 0 2 2h4', 'M10 9H8', 'M16 13H8', 'M16 17H8']),
+  MapPin: createIcon(['M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z', { tag: 'circle', attrs: { cx: 12, cy: 10, r: 3 } }]),
+  Activity: createIcon(['M22 12h-4l-3 9L9 3l-3 9H2']),
+  CheckCircle: createIcon(['M22 11.08V12a10 10 0 1 1-5.93-9.14', 'm9 11 3 3L22 4']),
+  CheckCircle2: createIcon([{ tag: 'circle', attrs: { cx: 12, cy: 12, r: 10 } }, 'm9 12 2 2 4-4']),
+  Package: createIcon(['m7.5 4.27 9 5.15', 'M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z', 'm3.3 7 8.7 5 8.7-5', 'M12 22V12']),
+  Phone: createIcon(['M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z']),
+  Mail: createIcon([{ tag: 'rect', attrs: { width: 20, height: 16, x: 2, y: 4, rx: 2 } }, 'm22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7']),
+  Building2: createIcon(['M6 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18Z', 'M6 12H4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2', 'M18 9h2a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-2', 'M10 6h4', 'M10 10h4', 'M10 14h4', 'M10 18h4']),
+  FolderOpen: createIcon(['m6 14 1.5-2.9A2 2 0 0 1 9.24 10H20a2 2 0 0 1 1.94 2.5l-1.54 6a2 2 0 0 1-1.95 1.5H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h3.9a2 2 0 0 1 1.69.9l.81 1.2a2 2 0 0 0 1.67.9H18a2 2 0 0 1 2 2v2']),
+  Server: createIcon([{ tag: 'rect', attrs: { width: 20, height: 8, x: 2, y: 2, rx: 2, ry: 2 } }, { tag: 'rect', attrs: { width: 20, height: 8, x: 2, y: 14, rx: 2, ry: 2 } }, 'M6 6h.01', 'M6 18h.01']),
+  CheckSquare: createIcon(['m9 11 3 3L22 4', 'M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11']),
+  Send: createIcon(['m22 2-7 20-4-9-9-4Z', 'M22 2 11 13']),
+  FileSignature: createIcon(['M20 19.5v.5a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h8.5L18 5.5', 'M8 18h1', 'M18.42 9.61a2.1 2.1 0 1 1 2.97 2.97L16.95 17 13 18l.99-3.95 4.43-4.44Z']),
+  FileCheck: createIcon(['M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z', 'M14 2v4a2 2 0 0 0 2 2h4', 'm9 15 2 2 4-4']),
+  Receipt: createIcon(['M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1Z', 'M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8', 'M12 17.5v-11']),
+  CreditCard: createIcon([{ tag: 'rect', attrs: { width: 20, height: 14, x: 2, y: 5, rx: 2 } }, 'M2 10h20']),
+  Factory: createIcon(['M2 20a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V8l-7 5V8l-7 5V4a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2Z', 'M17 18h1', 'M12 18h1', 'M7 18h1']),
+  Megaphone: createIcon(['m3 11 18-5v12L3 14v-3z', 'M11.6 16.8a3 3 0 1 1-5.8-1.6']),
+  FilePlus: createIcon(['M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z', 'M14 2v4a2 2 0 0 0 2 2h4', 'M9 15h6', 'M12 18v-6']),
+  Bot: createIcon(['M12 8V4H8', { tag: 'rect', attrs: { width: 16, height: 12, x: 4, y: 8, rx: 2 } }, 'M2 14h2', 'M20 14h2', 'M15 13v2', 'M9 13v2']),
+  Layout: createIcon([{ tag: 'rect', attrs: { width: 18, height: 18, x: 3, y: 3, rx: 2 } }, 'M3 9h18', 'M9 21V9']),
+  Newspaper: createIcon(['M4 22h16a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2H8a2 2 0 0 0-2 2v16a2 2 0 0 1-2 2Zm0 0a2 2 0 0 1-2-2v-9c0-1.1.9-2 2-2h2', 'M18 14h-8', 'M15 18h-5', 'M10 6h8v4h-8V6Z']),
+  ShoppingCart: createIcon([{ tag: 'circle', attrs: { cx: 8, cy: 21, r: 1 } }, { tag: 'circle', attrs: { cx: 19, cy: 21, r: 1 } }, 'M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12']),
+  Wrench: createIcon(['M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z']),
+  CalendarPlus: createIcon(['M8 2v4', 'M16 2v4', { tag: 'rect', attrs: { width: 18, height: 18, x: 3, y: 4, rx: 2 } }, 'M3 10h18', 'M10 16h4', 'M12 14v4']),
+  AudioLines: createIcon(['M2 10v3', 'M6 6v11', 'M10 3v18', 'M14 8v7', 'M18 5v13', 'M22 10v3']),
+  LogOut: createIcon(['M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4', 'M16 17l5-5-5-5', 'M21 12H9']),
 };
 
 // ============================================================
-// PETITS COMPOSANTS
+// CONSTANTES (copiées d'Orbit)
 // ============================================================
-function Avatar({ ownerId, size = 'sm' }) {
-  const o = OWNER[ownerId];
-  const cls = size === 'sm' ? 'w-6 h-6 text-[10px]' : 'w-8 h-8 text-xs';
-  return h('span', { title: o.name, className: `${cls} ${o.color} text-white rounded-full inline-flex items-center justify-center font-semibold shrink-0` }, o.initials);
+const ETAPE_COLORS = {
+  'Nouveau': 'bg-gray-100 text-gray-800', 'Qualification': 'bg-blue-100 text-blue-800', 'Proposition': 'bg-yellow-100 text-yellow-800',
+  'Négociation': 'bg-orange-100 text-orange-800', 'Gagnée': 'bg-green-100 text-green-800', 'Perdue': 'bg-red-100 text-red-800', 'Archivée': 'bg-gray-100 text-gray-800',
+};
+const ETAPE_HOVER = { 'Nouveau': 'hover:bg-gray-200', 'Qualification': 'hover:bg-blue-200', 'Proposition': 'hover:bg-yellow-200', 'Négociation': 'hover:bg-orange-200', 'Gagnée': 'hover:bg-green-200', 'Perdue': 'hover:bg-red-200', 'Archivée': 'hover:bg-gray-200' };
+const ALL_ETAPES = ['Nouveau', 'Qualification', 'Proposition', 'Négociation', 'Gagnée', 'Perdue', 'Archivée'];
+const DEFAULT_ETAPES = ALL_ETAPES.filter(e => e !== 'Gagnée' && e !== 'Perdue' && e !== 'Archivée');
+const etapeOptions = ALL_ETAPES.map(e => ({ value: e, label: e, className: ETAPE_COLORS[e] }));
+const ETAPE_BADGE_COLORS = {
+  'Nouveau': 'bg-gray-100 text-gray-700 border-gray-300', 'Qualification': 'bg-blue-100 text-blue-700 border-blue-300', 'Proposition': 'bg-yellow-100 text-yellow-700 border-yellow-300',
+  'Négociation': 'bg-orange-100 text-orange-700 border-orange-300', 'Gagnée': 'bg-green-100 text-green-700 border-green-300', 'Perdue': 'bg-red-100 text-red-700 border-red-300', 'Archivée': 'bg-gray-200 text-gray-600 border-gray-400',
+};
+const HEALTH_LEVELS = [
+  { level: 'critical', label: 'Critique', activeClass: 'bg-red-100 text-red-700 border-red-300' },
+  { level: 'warning', label: 'Attention', activeClass: 'bg-orange-100 text-orange-700 border-orange-300' },
+  { level: 'good', label: 'Bonne', activeClass: 'bg-blue-100 text-blue-700 border-blue-300' },
+  { level: 'excellent', label: 'Excellente', activeClass: 'bg-green-100 text-green-700 border-green-300' },
+];
+const CHALEUR_RANGES = ['0-25', '26-50', '51-75', '76-100'];
+const SOURCE_OPTIONS = ['Site Web', 'Référencement', 'Référence client', 'Réseautage', 'Autre'];
+const sourceOpportuniteOptions = SOURCE_OPTIONS.map(s => ({ value: s, label: s, className: 'bg-gray-100 text-gray-800' }));
+const typeOpportuniteOptions = [
+  { value: 'vente', label: 'Vente', className: 'bg-green-100 text-green-800' }, { value: 'visibilite', label: 'Visibilité', className: 'bg-purple-100 text-purple-800' },
+  { value: 'positionnement', label: 'Positionnement', className: 'bg-indigo-100 text-indigo-800' }, { value: 'innovation', label: 'Innovation', className: 'bg-pink-100 text-pink-800' },
+  { value: 'partenariat', label: 'Partenariat', className: 'bg-blue-100 text-blue-800' }, { value: 'influence', label: 'Influence', className: 'bg-amber-100 text-amber-800' },
+  { value: 'strategique', label: 'Stratégique', className: 'bg-red-100 text-red-800' }, { value: 'financement', label: 'Financement', className: 'bg-emerald-100 text-emerald-800' },
+  { value: 'apprentissage', label: 'Apprentissage', className: 'bg-teal-100 text-teal-800' }, { value: 'interne', label: 'Interne', className: 'bg-slate-100 text-slate-800' },
+];
+const DORMANT_WARNING_DAYS = 14, DORMANT_CRITICAL_DAYS = 30;
+const CLOSED_STAGES = new Set(['Gagnée', 'Perdue', 'Archivée']);
+const MENU = [
+  ['dashboard', 'Tableau de bord', 'BarChart3'], ['portfolio', 'Portfolio', 'BarChart3'], ['planning', 'Planification', 'CalendarPlus'], ['clients', 'Contacts', 'Users'],
+  ['entreprises', 'Entreprises', 'Building2'], ['employes', 'Employés', 'Users'], ['audios', 'Audios', 'AudioLines'], ['opportunities', 'Opportunités', 'Target'],
+  ['projects', 'Projets', 'FolderOpen'], ['applications', 'Applications', 'Server'], ['tasks', 'Tâches', 'CheckSquare'], ['offers', 'Offres', 'FileText'],
+  ['gestion-offres', 'Gestion des Offres', 'Send'], ['submissions', 'Soumissions', 'FileSignature'], ['contracts', 'Contrats', 'FileCheck'], ['invoices', 'Factures', 'Receipt'],
+  ['billing', 'Facturation AIMS', 'CreditCard'], ['usine', 'Usine', 'Factory'], ['publications', 'Publications', 'Megaphone'], ['documents', 'Documents', 'FilePlus'],
+  ['somtech-brain', 'Somtech Brain', 'Orbit'], ['monik', 'MoniK', 'Bot'], ['maquettes', 'Maquettes', 'Layout'], ['tech-watch', 'Veille Tech', 'Newspaper'],
+  ['veille-sociale', 'Veille Sociale', 'TrendingUp'], ['commandes', 'Commandes', 'ShoppingCart'], ['time-tracking', 'Temps', 'Clock'], ['admin', 'Administration', 'Wrench'],
+  ['email-templates', "Templates d'email", 'Mail'], ['tools', 'Outils', 'Wrench'], ['mes-taches', 'Mes tâches', 'CheckCircle'], ['widget-playground', 'Widget Playground', 'Layout'],
+];
+
+// ============================================================
+// DONNÉES D'EXEMPLE (structure = table opportunites d'Orbit)
+// ============================================================
+const NOW = new Date();
+const iso = (d) => d.toISOString().slice(0, 10);
+const ago = (n) => { const d = new Date(NOW); d.setDate(d.getDate() - n); return iso(d); };
+const ahead = (n) => { const d = new Date(NOW); d.setDate(d.getDate() + n); return iso(d); };
+const USERS = [
+  { id: 'u1', prenom: 'Maxime', nom: 'Leboeuf' },
+  { id: 'u2', prenom: 'Julie', nom: 'Tremblay' },
+  { id: 'u3', prenom: 'Simon', nom: 'Gagnon' },
+];
+const CLIENTS = {
+  c1: { id: 'c1', nom: 'Construction Gauthier', email: 'info@constructiongauthier.ca', adresse: '1200, rue Principale', ville: 'Lévis', code_postal: 'G6V 1A1', pays: 'Canada', telephone: '418 555-0140' },
+  c2: { id: 'c2', nom: 'Progex Inc.', email: 'contact@progex.ca', adresse: '88, boul. des Forges', ville: 'Trois-Rivières', code_postal: 'G8Z 1T1', pays: 'Canada', telephone: '819 555-0122' },
+  c3: { id: 'c3', nom: 'Ma Place RH', email: 'bonjour@maplacerh.ca', adresse: '455, av. Laurier E', ville: 'Montréal', code_postal: 'H2J 1E7', pays: 'Canada', telephone: '514 555-0177' },
+  c4: { id: 'c4', nom: 'Atelier Bergeron', email: 'marc@atelierbergeron.ca', adresse: '17, rue du Moulin', ville: 'Saint-Georges', code_postal: 'G5Y 2B6', pays: 'Canada', telephone: '418 555-0199' },
+  c5: { id: 'c5', nom: 'Usinage Précis', email: 'ventes@usinageprecis.ca', adresse: '3400, rue Industrielle', ville: 'Drummondville', code_postal: 'J2C 6R4', pays: 'Canada', telephone: '819 555-0111' },
+  c6: { id: 'c6', nom: 'Boulangerie Lévesque', email: 'annie@boulangerielevesque.ca', adresse: '62, rue Saint-Jean', ville: 'Québec', code_postal: 'G1R 1N5', pays: 'Canada', telephone: '418 555-0163' },
+  c7: { id: 'c7', nom: 'Clinique Santé Plus', email: 'admin@cliniquesanteplus.ca', adresse: '900, boul. Charest O', ville: 'Québec', code_postal: 'G1N 2C8', pays: 'Canada', telephone: '418 555-0108' },
+  c8: { id: 'c8', nom: 'Paysagement Vertdure', email: 'eric@vertdure.ca', adresse: '215, ch. des Érables', ville: 'Sherbrooke', code_postal: 'J1H 5L2', pays: 'Canada', telephone: '819 555-0154' },
+  c9: { id: 'c9', nom: 'Studio Nordik', email: 'sophie@studionordik.ca', adresse: '4010, rue Saint-Denis', ville: 'Montréal', code_postal: 'H2W 2M5', pays: 'Canada', telephone: '514 555-0136' },
+  c10: { id: 'c10', nom: 'Distribution Roy & Fils', email: 'patrick@royetfils.ca', adresse: '1550, rue des Entrepreneurs', ville: 'Lévis', code_postal: 'G6W 0A1', pays: 'Canada', telephone: '418 555-0182' },
+  c11: { id: 'c11', nom: 'Coop des Cantons', email: 'helene@coopcantons.coop', adresse: '75, rue Wellington N', ville: 'Sherbrooke', code_postal: 'J1H 5B7', pays: 'Canada', telephone: '819 555-0129' },
+  c12: { id: 'c12', nom: 'Spa Les Cèdres', email: 'info@spalescedres.ca', adresse: '3200, ch. du Lac', ville: 'Magog', code_postal: 'J1X 3W4', pays: 'Canada', telephone: '819 555-0147' },
+  c13: { id: 'c13', nom: 'Immobilier Deschênes', email: 'f.deschenes@immodeschenes.ca', adresse: '520, boul. René-Lévesque', ville: 'Québec', code_postal: 'G1R 2E3', pays: 'Canada', telephone: '418 555-0171' },
+};
+const mk = (id, o) => ({ id, profit_estime: 30, duree_reception_paiement_mois: 1, mode_repartition: 'auto', repartition_mensuelle: null, type: 'vente', date_ouverture: o.date_creation, ...o, clients: CLIENTS[o.client_id] || null });
+const INITIAL_OPPS = [
+  mk('o01', { nom_opportunite: 'Refonte du portail client', description: 'Portail de suivi des chantiers pour les clients résidentiels. Offre envoyée, en discussion sur la phase 2.', client_id: 'c1', etape_funnel: 'Négociation', responsable_id: 'u1', valeur_estimee: 48000, probabilite_conversion: 75, profit_estime: 35, source_opportunite: 'Référence client', date_creation: ago(41), date_mise_a_jour: ago(2), date_cloture_estimee: ahead(12), duree_reception_paiement_mois: 3 }),
+  mk('o02', { nom_opportunite: 'Module facturation cloud', description: 'Automatiser la facturation de leurs services cloud. Proposition remise, attente du comité de direction.', client_id: 'c2', etape_funnel: 'Proposition', responsable_id: 'u2', valeur_estimee: 32000, probabilite_conversion: 50, profit_estime: 28, source_opportunite: 'Site Web', date_creation: ago(28), date_mise_a_jour: ago(5), date_cloture_estimee: ahead(20), duree_reception_paiement_mois: 2 }),
+  mk('o03', { nom_opportunite: 'Assistant conversationnel RH', description: 'Chatbot interne pour répondre aux questions des employés sur les politiques RH.', client_id: 'c3', etape_funnel: 'Qualification', responsable_id: 'u3', valeur_estimee: 21000, probabilite_conversion: 35, profit_estime: 40, source_opportunite: 'Réseautage', date_creation: ago(12), date_mise_a_jour: ago(1), date_cloture_estimee: ahead(35), type: 'innovation' }),
+  mk('o04', { nom_opportunite: 'Migration ERP vers Orbit', description: 'Remplacement de leur ERP maison. Négociation sur le calendrier de migration des données.', client_id: 'c4', etape_funnel: 'Négociation', responsable_id: 'u1', valeur_estimee: 65000, probabilite_conversion: 60, profit_estime: 32, source_opportunite: 'Référence client', date_creation: ago(63), date_mise_a_jour: ago(17), date_cloture_estimee: ahead(8), duree_reception_paiement_mois: 6, mode_repartition: 'manuel', repartition_mensuelle: [20000, 15000, 10000, 10000, 5000, 5000] }),
+  mk('o05', { nom_opportunite: 'Tableau de bord KPI production', description: 'Demande reçue ce matin : suivi en temps réel des rejets machine.', client_id: 'c5', etape_funnel: 'Nouveau', responsable_id: 'u2', valeur_estimee: 12000, probabilite_conversion: 15, profit_estime: 25, source_opportunite: 'Site Web', date_creation: ago(0), date_mise_a_jour: ago(0), date_cloture_estimee: ahead(45) }),
+  mk('o06', { nom_opportunite: 'Site transactionnel', description: 'Commandes en ligne pour les deux succursales. Sans nouvelle depuis un mois.', client_id: 'c6', etape_funnel: 'Qualification', responsable_id: 'u3', valeur_estimee: 9500, probabilite_conversion: 30, profit_estime: 20, source_opportunite: 'Référencement', date_creation: ago(50), date_mise_a_jour: ago(33), date_cloture_estimee: ahead(5) }),
+  mk('o07', { nom_opportunite: 'Audit Loi 25', description: 'Audit de conformité et plan de remédiation. Proposition remise.', client_id: 'c7', etape_funnel: 'Proposition', responsable_id: 'u1', valeur_estimee: 8500, probabilite_conversion: 55, profit_estime: 45, source_opportunite: 'Réseautage', date_creation: ago(19), date_mise_a_jour: ago(3), date_cloture_estimee: ahead(10), type: 'strategique' }),
+  mk('o08', { nom_opportunite: 'Application mobile terrain', description: 'Feuilles de temps et photos de chantier depuis le téléphone.', client_id: 'c8', etape_funnel: 'Nouveau', responsable_id: null, valeur_estimee: 27000, probabilite_conversion: 20, profit_estime: 30, source_opportunite: 'Autre', date_creation: ago(15), date_mise_a_jour: ago(15), date_cloture_estimee: null }),
+  mk('o09', { nom_opportunite: 'Intégration Stripe', description: 'Paiement récurrent pour leurs abonnements photo.', client_id: 'c9', etape_funnel: 'Proposition', responsable_id: 'u2', valeur_estimee: 6000, probabilite_conversion: 65, profit_estime: 50, source_opportunite: 'Site Web', date_creation: ago(11), date_mise_a_jour: ago(4), date_cloture_estimee: ahead(7) }),
+  mk('o10', { nom_opportunite: 'Portail fournisseurs', description: 'Portail pour 80 fournisseurs : bons de commande, factures, statuts.', client_id: 'c10', etape_funnel: 'Qualification', responsable_id: 'u1', valeur_estimee: 38000, probabilite_conversion: 40, profit_estime: 30, source_opportunite: 'Référence client', date_creation: ago(21), date_mise_a_jour: ago(6), date_cloture_estimee: ahead(40), duree_reception_paiement_mois: 4 }),
+  mk('o11', { nom_opportunite: 'Refonte intranet', description: 'Gagnée le 31 août. Projet démarré.', client_id: 'c11', etape_funnel: 'Gagnée', responsable_id: 'u2', valeur_estimee: 19000, probabilite_conversion: 100, profit_estime: 35, source_opportunite: 'Réseautage', date_creation: ago(70), date_mise_a_jour: ago(9), date_cloture_estimee: ago(9) }),
+  mk('o12', { nom_opportunite: 'Système de réservation', description: 'Perdue : ont choisi une solution SaaS clé en main.', client_id: 'c12', etape_funnel: 'Perdue', responsable_id: 'u3', valeur_estimee: 14000, probabilite_conversion: 0, profit_estime: 30, source_opportunite: 'Référencement', date_creation: ago(55), date_mise_a_jour: ago(12), date_cloture_estimee: ago(12) }),
+  mk('o13', { nom_opportunite: 'CRM sur mesure', description: 'Projet mis sur la glace en juillet, archivé.', client_id: 'c13', etape_funnel: 'Archivée', responsable_id: 'u1', valeur_estimee: 22000, probabilite_conversion: 0, profit_estime: 30, source_opportunite: 'Autre', date_creation: ago(120), date_mise_a_jour: ago(48), date_cloture_estimee: ago(48) }),
+];
+// Interactions (pour la santé et l'onglet Interactions)
+const INTERACTIONS = [
+  { id: 'i1', opportunite_id: 'o01', type: 'Appel', date_interaction: ago(2), titre: 'Suivi phase 1', resume: 'Charles-Olivier valide le budget de la phase 1 et veut un échéancier pour la phase 2.', participants: 'Charles-Olivier Gauthier' },
+  { id: 'i2', opportunite_id: 'o01', type: 'Courriel', date_interaction: ago(6), titre: 'Envoi de l’offre OFF-2026-041', resume: 'Offre envoyée avec l’échéancier de la phase 1.', participants: 'Charles-Olivier Gauthier' },
+  { id: 'i3', opportunite_id: 'o01', type: 'Rencontre', date_interaction: ago(14), titre: 'Atelier de cadrage', resume: 'Atelier de 2 h sur place avec l’équipe de chantier.', participants: 'Charles-Olivier Gauthier, Julie Tremblay' },
+  { id: 'i4', opportunite_id: 'o02', type: 'Courriel', date_interaction: ago(5), titre: 'Comité de direction', resume: 'Nathalie confirme la présentation au comité le 18 septembre.', participants: 'Nathalie Roy' },
+  { id: 'i5', opportunite_id: 'o03', type: 'Appel', date_interaction: ago(1), titre: 'Appel de découverte', resume: '120 employés, 3 conventions collectives.', participants: 'Isabelle Fortin' },
+  { id: 'i6', opportunite_id: 'o04', type: 'Courriel', date_interaction: ago(17), titre: 'Demande de délai', resume: 'Marc demande de reporter la migration après la fin d’année fiscale.', participants: 'Marc Bergeron' },
+  { id: 'i7', opportunite_id: 'o06', type: 'Courriel', date_interaction: ago(33), titre: 'Relance', resume: 'Relance envoyée, sans réponse.', participants: 'Annie Lévesque' },
+  { id: 'i8', opportunite_id: 'o07', type: 'Courriel', date_interaction: ago(3), titre: 'Offre envoyée', resume: 'Offre OFF-2026-046 envoyée au Dr Pelletier.', participants: 'Dr Louis Pelletier' },
+  { id: 'i9', opportunite_id: 'o09', type: 'Courriel', date_interaction: ago(4), titre: 'Retour attendu', resume: 'Sophie revient d’ici vendredi.', participants: 'Sophie Caron' },
+  { id: 'i10', opportunite_id: 'o10', type: 'Rencontre', date_interaction: ago(6), titre: 'Atelier achats', resume: 'Atelier avec l’équipe des achats : 80 fournisseurs, intégration comptable à chiffrer.', participants: 'Patrick Roy' },
+  { id: 'i11', opportunite_id: 'o11', type: 'Rencontre', date_interaction: ago(9), titre: 'Signature du contrat', resume: 'Contrat signé, projet créé.', participants: 'Hélène Dubois' },
+  { id: 'i12', opportunite_id: 'o12', type: 'Appel', date_interaction: ago(12), titre: 'Décision', resume: 'Marie-Ève nous informe de leur choix pour une solution SaaS.', participants: 'Marie-Ève Simard' },
+];
+const RELATED = {
+  o01: { taches: [{ titre: 'Relancer sur la phase 2', statut: 'À faire', echeance: ahead(1) }], offres: [{ numero: 'OFF-2026-041', titre: 'Portail client — phase 1', montant: 48000, etape: 'Envoyée' }] },
+  o02: { offres: [{ numero: 'OFF-2026-044', titre: 'Facturation cloud', montant: 32000, etape: 'Brouillon' }] },
+  o03: { taches: [{ titre: 'Préparer le questionnaire de qualification', statut: 'En cours', echeance: ahead(3) }] },
+  o04: { offres: [{ numero: 'OFF-2026-037', titre: 'Migration ERP', montant: 65000, etape: 'Négociée' }] },
+  o07: { offres: [{ numero: 'OFF-2026-046', titre: 'Audit Loi 25', montant: 8500, etape: 'Envoyée' }] },
+  o09: { offres: [{ numero: 'OFF-2026-047', titre: 'Intégration paiement', montant: 6000, etape: 'Envoyée' }] },
+  o10: { taches: [{ titre: 'Chiffrer l’intégration à leur comptabilité', statut: 'À faire', echeance: ahead(4) }] },
+  o11: { projets: [{ nom: 'Intranet Coop des Cantons', statut: 'En cours', budget: 19000 }], contrats: [{ numero: 'CTR-2026-012', statut: 'Signé' }] },
+};
+
+// ============================================================
+// LOGIQUE (copiée d'Orbit : opportunityHealth, useDormantOpportunities, opportunityRevenue)
+// ============================================================
+const daysBetween = (a, b) => Math.floor((a.getTime() - b.getTime()) / 86400000);
+function calculateHealthScore(opportunity, lastInteractionDate) {
+  let score = 0; const recommendations = [];
+  const proba = opportunity.probabilite_conversion || 0;
+  score += (proba / 100) * 40;
+  if (proba < 30) recommendations.push("Probabilité faible : Qualifier davantage l'opportunité");
+  else if (proba < 50) recommendations.push('Augmenter les chances de conversion avec des interactions ciblées');
+  let d = 999;
+  if (lastInteractionDate) d = daysBetween(NOW, new Date(lastInteractionDate));
+  if (d <= 7) score += 30;
+  else if (d <= 14) { score += 20; recommendations.push("Dernière interaction il y a plus d'une semaine : Planifier un suivi"); }
+  else if (d <= 30) { score += 10; recommendations.push('Aucune interaction depuis 2+ semaines : Contact urgent recommandé'); }
+  else recommendations.push('Opportunité froide : Requalification nécessaire');
+  if (opportunity.date_cloture_estimee) {
+    const dc = daysBetween(new Date(opportunity.date_cloture_estimee), NOW);
+    if (dc < 0) recommendations.push('Date de clôture dépassée : Mettre à jour ou clôturer');
+    else if (dc <= 7) { score += 20; recommendations.push('Clôture imminente : Actions finales à planifier'); }
+    else if (dc <= 30) score += 15; else if (dc <= 90) score += 10; else score += 5;
+  } else recommendations.push('Définir une date de clôture estimée');
+  if (opportunity.responsable_id) score += 10; else recommendations.push('Assigner un responsable à cette opportunité');
+  let level, label, color, bgColor, dotColor;
+  if (score >= 75) { level = 'excellent'; label = 'Excellente'; color = 'text-green-700'; bgColor = 'bg-green-100'; dotColor = 'bg-green-500'; }
+  else if (score >= 50) { level = 'good'; label = 'Bonne'; color = 'text-blue-700'; bgColor = 'bg-blue-100'; dotColor = 'bg-blue-500'; }
+  else if (score >= 30) { level = 'warning'; label = 'Attention'; color = 'text-orange-700'; bgColor = 'bg-orange-100'; dotColor = 'bg-orange-500'; }
+  else { level = 'critical'; label = 'Critique'; color = 'text-red-700'; bgColor = 'bg-red-100'; dotColor = 'bg-red-500'; }
+  return { score: Math.round(score), level, label, color, bgColor, dotColor, recommendations: recommendations.length ? recommendations : ['Opportunité en bonne santé, continuer le suivi'] };
 }
-function HealthDot({ o, withLabel }) {
-  const score = healthScore(o); const lvl = HEALTH[healthLevel(score)];
-  return h('span', { className: 'inline-flex items-center gap-1.5', title: `Santé ${score}/100` },
-    h('span', { className: `w-2.5 h-2.5 rounded-full ${lvl.dot}` }),
-    withLabel && h('span', { className: `text-xs ${lvl.text}` }, `${lvl.label} · ${score}`));
+const healthLevelOrder = (l) => ({ critical: 0, warning: 1, good: 2, excellent: 3 })[l];
+const lastInteractionMap = () => { const m = new Map(); [...INTERACTIONS].sort((a, b) => b.date_interaction.localeCompare(a.date_interaction)).forEach(i => { if (!m.has(i.opportunite_id)) m.set(i.opportunite_id, i.date_interaction); }); return m; };
+const LAST_INTERACTIONS = lastInteractionMap();
+
+function useDormant(opps) {
+  const list = (opps || []).filter(o => !CLOSED_STAGES.has(o.etape_funnel)).reduce((acc, o) => {
+    const last = o.date_mise_a_jour || o.date_creation; if (!last) return acc;
+    const days = daysBetween(NOW, new Date(last));
+    if (days >= DORMANT_WARNING_DAYS) acc.push({ id: o.id, nom_opportunite: o.nom_opportunite, etape_funnel: o.etape_funnel, client_nom: o.clients?.nom, daysSinceUpdate: days, dormancyLevel: days >= DORMANT_CRITICAL_DAYS ? 'critical' : 'warning' });
+    return acc;
+  }, []).sort((a, b) => b.daysSinceUpdate - a.daysSinceUpdate);
+  return { dormantOpportunities: list, criticalCount: list.filter(o => o.dormancyLevel === 'critical').length, warningCount: list.filter(o => o.dormancyLevel === 'warning').length };
 }
-function StageChip({ id }) {
-  const s = STAGE[id]; const st = STAGE_STYLE[s.color];
-  return h('span', { className: `px-2 py-0.5 rounded-full text-xs font-medium ${st.chip}` }, s.label);
+
+const MOIS_FR = ['janv.', 'févr.', 'mars', 'avr.', 'mai', 'juin', 'juil.', 'août', 'sept.', 'oct.', 'nov.', 'déc.'];
+const monthKey = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+const opportunityColors = ['#10B981', '#3B82F6', '#F59E0B', '#8B5CF6', '#EC4899', '#14B8A6', '#F97316', '#6366F1', '#84CC16', '#06B6D4'];
+function buildOpportunityRevenueTimeline(opportunities) {
+  const withDates = opportunities.filter(o => !!o.date_cloture_estimee);
+  const colorMap = new Map();
+  withDates.forEach((o, i) => colorMap.set(String(o.id), { nom: o.nom_opportunite, color: opportunityColors[i % opportunityColors.length] }));
+  const months = Array.from({ length: 12 }, (_, i) => { const m = new Date(NOW.getFullYear(), NOW.getMonth() + i, 1); return { date: m, label: `${MOIS_FR[m.getMonth()]} ${m.getFullYear()}`, key: monthKey(m) }; });
+  const monthlyData = months.map(month => {
+    const dp = { mois: month.label, total: 0, opportunities: [] };
+    opportunities.forEach(o => {
+      if (!o.date_cloture_estimee) return;
+      const et = (o.etape_funnel || '').toLowerCase(); if (et === 'perdue' || et === 'archivée') return;
+      const close = new Date(o.date_cloture_estimee + 'T12:00:00'); const oppMonth = monthKey(close);
+      const valeur = Number(o.valeur_estimee) || 0, proba = o.probabilite_conversion || 0; const vp = valeur * proba / 100;
+      const duree = o.duree_reception_paiement_mois || 1, mode = o.mode_repartition || 'auto', rep = o.repartition_mensuelle || [];
+      const ci = months.findIndex(m => m.key === oppMonth), mi = months.findIndex(m => m.key === month.key);
+      const off = mi - ci; let v = 0;
+      if (off >= 0 && off < duree) v = (mode === 'manuel' && Array.isArray(rep) && rep[off] !== undefined) ? Math.round(Number(rep[off]) * proba / 100) : Math.round(vp / duree);
+      if (v > 0) { dp['opp_' + o.id] = v; dp.total += v; dp.opportunities.push({ id: o.id, nom: o.nom_opportunite, valeurPonderee: v, dureeReceptionMois: duree, modeRepartition: mode, color: colorMap.get(String(o.id))?.color || '#6B7280' }); }
+    });
+    return dp;
+  });
+  return { months, monthlyData, opportunityColorMap: colorMap, totalValeurPonderee: Math.round(monthlyData.reduce((s, m) => s + m.total, 0)), totalCount: withDates.length };
 }
-function Btn({ children, onClick, variant = 'default', icon: Icon, className = '', disabled, title }) {
-  const base = 'inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition disabled:opacity-40 disabled:cursor-not-allowed';
-  const v = {
-    default: 'bg-white border border-slate-300 text-slate-700 hover:bg-slate-50',
-    primary: 'bg-indigo-600 text-white hover:bg-indigo-700 shadow-sm',
-    success: 'bg-emerald-600 text-white hover:bg-emerald-700',
-    danger:  'bg-white border border-rose-300 text-rose-700 hover:bg-rose-50',
-    ghost:   'text-slate-600 hover:bg-slate-100',
-  }[variant];
-  return h('button', { onClick, disabled, title, className: `${base} ${v} ${className}` }, Icon && h(Icon, { size: 16 }), children);
+const money = (n) => `$${Number(n).toLocaleString()} CAD`;
+const fmtDate = (s) => s ? new Date(s + 'T12:00:00').toLocaleDateString() : '';
+
+// ============================================================
+// PRIMITIVES shadcn (Button, Badge, Card, Tabs, Table, Dialog…)
+// ============================================================
+function Button({ children, variant = 'default', size = 'default', className = '', onClick, title, type = 'button', disabled }) {
+  const base = 'inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-950 disabled:pointer-events-none disabled:opacity-50';
+  const v = { default: 'bg-gray-900 text-gray-50 hover:bg-gray-900/90', destructive: 'bg-red-500 text-gray-50 hover:bg-red-500/90', outline: 'border border-gray-200 bg-white hover:bg-gray-100 hover:text-gray-900', secondary: 'bg-gray-100 text-gray-900 hover:bg-gray-100/80', ghost: 'hover:bg-gray-100 hover:text-gray-900' }[variant];
+  const s = { default: 'h-10 px-4 py-2', sm: 'h-9 rounded-md px-3', icon: 'h-10 w-10' }[size];
+  return h('button', { type, onClick, title, disabled, className: `${base} ${v} ${s} ${className}` }, children);
 }
-function KpiCard({ icon: Icon, label, value, sub, tone = 'indigo' }) {
-  const tones = { indigo: 'bg-indigo-50 text-indigo-600', emerald: 'bg-emerald-50 text-emerald-600', amber: 'bg-amber-50 text-amber-600', sky: 'bg-sky-50 text-sky-600', violet: 'bg-violet-50 text-violet-600' };
-  return h('div', { className: 'bg-white rounded-xl border border-slate-200 p-4 flex items-start gap-3' },
-    h('span', { className: `w-9 h-9 rounded-lg flex items-center justify-center ${tones[tone]}` }, h(Icon, { size: 18 })),
-    h('div', { className: 'min-w-0' },
-      h('div', { className: 'text-xs uppercase tracking-wide text-slate-500' }, label),
-      h('div', { className: 'text-xl font-semibold text-slate-900 truncate' }, value),
-      sub && h('div', { className: 'text-xs text-slate-500 mt-0.5' }, sub)));
+function Badge({ children, variant = 'default', className = '', onClick }) {
+  const base = 'inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors';
+  let v = { default: 'border-transparent bg-gray-900 text-gray-50 hover:bg-gray-900/80', secondary: 'border-transparent bg-gray-100 text-gray-900 hover:bg-gray-100/80', outline: 'text-gray-950', destructive: 'border-transparent bg-red-500 text-gray-50' }[variant];
+  // équivalent minimal de tailwind-merge : la classe passée l'emporte sur celle du variant
+  const has = (p) => new RegExp('(^|\\s)' + p + '-').test(className);
+  v = v.split(' ').filter(c => !((has('bg') && /^(hover:)?bg-/.test(c)) || (has('text') && /^text-/.test(c)) || (has('border') && /^border-/.test(c)))).join(' ');
+  return h('div', { onClick, className: `${base} ${v} ${className}` }, children);
 }
-function Select({ value, onChange, options, placeholder }) {
-  return h('select', { value, onChange: e => onChange(e.target.value), className: 'h-9 rounded-md border border-slate-300 bg-white px-2 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500' },
-    h('option', { value: '' }, placeholder),
+const Card = ({ children, className = '' }) => h('div', { className: `rounded-lg border border-gray-200 bg-white text-gray-950 shadow-sm ${className}` }, children);
+const CardHeader = ({ children, className = '' }) => h('div', { className: `flex flex-col space-y-1.5 p-6 ${className}` }, children);
+const CardTitle = ({ children, className = '' }) => h('h3', { className: `text-2xl font-semibold leading-none tracking-tight ${className}` }, children);
+const CardContent = ({ children, className = '' }) => h('div', { className: `p-6 pt-0 ${className}` }, children);
+const Input = (props) => h('input', { ...props, className: `flex h-10 w-full rounded-md border border-gray-200 bg-white px-3 py-2 text-sm ring-offset-white file:border-0 placeholder:text-gray-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-950 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 ${props.className || ''}` });
+const Label = ({ children, className = '', htmlFor }) => h('label', { htmlFor, className: `text-sm font-medium leading-none ${className}` }, children);
+function TabsList({ children, className = '' }) { return h('div', { className: `inline-flex h-10 items-center justify-center rounded-md bg-gray-100 p-1 text-gray-500 ${className}` }, children); }
+function TabsTrigger({ active, onClick, children, className = '' }) {
+  return h('button', { type: 'button', onClick, className: `inline-flex items-center justify-center whitespace-nowrap rounded-sm px-3 py-1.5 text-sm font-medium ring-offset-white transition-all ${active ? 'bg-white text-gray-950 shadow-sm' : ''} ${className}` }, children);
+}
+const Table = ({ children }) => h('div', { className: 'relative w-full overflow-auto' }, h('table', { className: 'w-full caption-bottom text-sm' }, children));
+const THead = ({ children }) => h('thead', { className: '[&_tr]:border-b' }, children);
+const TBody = ({ children }) => h('tbody', { className: '[&_tr:last-child]:border-0' }, children);
+const TR = ({ children, className = '', onClick }) => h('tr', { onClick, className: `border-b border-gray-200 transition-colors hover:bg-gray-100/50 data-[state=selected]:bg-gray-100 ${className}` }, children);
+const TH = ({ children, className = '' }) => h('th', { className: `h-12 px-4 text-left align-middle font-medium text-gray-500 ${className}` }, children);
+const TD = ({ children, className = '', onClick }) => h('td', { onClick, className: `p-4 align-middle ${className}` }, children);
+function Select({ value, onChange, options, className = '' }) {
+  return h('select', { value, onChange: e => onChange(e.target.value), className: `flex h-10 items-center justify-between rounded-md border border-gray-200 bg-white px-3 py-2 text-sm ring-offset-white focus:outline-none focus:ring-2 focus:ring-gray-950 ${className}` },
     ...options.map(o => h('option', { key: o.value, value: o.value }, o.label)));
 }
+function Overlay({ children, onClose, className = '' }) {
+  return h('div', { className: 'fixed inset-0 z-50 flex items-center justify-center' },
+    h('div', { className: 'absolute inset-0 bg-black/80', onClick: onClose }),
+    h('div', { className: `relative z-10 bg-white border border-gray-200 shadow-lg rounded-lg ${className}` }, children));
+}
+function Toast({ toast }) { return toast ? h('div', { className: 'fixed bottom-4 right-4 z-[60] w-96 rounded-md border border-gray-200 bg-white p-4 shadow-lg' }, h('div', { className: 'text-sm font-semibold' }, toast.title), toast.description && h('div', { className: 'text-sm text-gray-500 mt-1' }, toast.description)) : null; }
 
 // ============================================================
-// CARTE PIPELINE
+// INLINE EDIT (InlineEditText / Select / Number / Date / Textarea)
 // ============================================================
-function OppCard({ o, onOpen, selected }) {
-  const dorm = dormancy(o);
-  return h('button', { onClick: () => onOpen(o.id),
-      className: `w-full text-left bg-white rounded-lg border ${selected ? 'border-indigo-500 ring-2 ring-indigo-200' : 'border-slate-200 hover:border-indigo-300'} p-3 shadow-sm hover:shadow transition fadein` },
-    h('div', { className: 'flex items-start justify-between gap-2' },
-      h('div', { className: 'min-w-0' },
-        h('div', { className: 'text-[11px] text-slate-500 truncate flex items-center gap-1' }, h(Building, { size: 11 }), o.entreprise),
-        h('div', { className: 'text-sm font-semibold text-slate-900 leading-snug' }, o.nom)),
-      h(HealthDot, { o })),
-    h('div', { className: 'mt-2 flex items-center justify-between' },
-      h('span', { className: 'text-sm font-semibold text-slate-800' }, fmtMoney(o.valeur)),
-      h('span', { className: 'text-xs text-slate-500' }, `${o.probabilite} %`)),
-    h('div', { className: 'mt-1.5 h-1 rounded bg-slate-100 overflow-hidden' },
-      h('div', { className: 'h-full bg-indigo-500', style: { width: o.probabilite + '%' } })),
-    h('div', { className: 'mt-2.5 flex items-center justify-between' },
-      h('div', { className: 'flex items-center gap-2' }, h(Avatar, { ownerId: o.owner }),
-        h('span', { className: 'text-[11px] text-slate-500 flex items-center gap-1' }, h(Calendar, { size: 11 }), fmtDate(o.cloture))),
-      dorm ? h('span', { className: `text-[11px] font-medium px-1.5 py-0.5 rounded ${dorm === 'critique' ? 'bg-rose-100 text-rose-700' : 'bg-amber-100 text-amber-800'}` }, `${daysSince(o.lastActivity)} j sans activité`)
-           : h('span', { className: 'text-[11px] text-slate-400' }, daysSince(o.lastActivity) === 0 ? "aujourd'hui" : `il y a ${daysSince(o.lastActivity)} j`)));
+function useInline(value) { const [editing, setEditing] = useState(false); const [temp, setTemp] = useState(value); useEffect(() => { setTemp(value); }, [value]); return { editing, setEditing, temp, setTemp }; }
+const OkCancel = ({ onOk, onCancel }) => h(React.Fragment, null,
+  h('button', { onClick: onOk, className: 'p-1 text-green-600 hover:text-green-700 hover:bg-green-50 rounded' }, h(I.Check, { className: 'h-3 w-3' })),
+  h('button', { onClick: onCancel, className: 'p-1 text-red-600 hover:text-red-700 hover:bg-red-50 rounded' }, h(I.X, { className: 'h-3 w-3' })));
+function InlineEditText({ value, onSave, placeholder = 'Cliquez pour modifier...', large = false }) {
+  const s = useInline(value);
+  const save = () => { if (s.temp.trim() !== value.trim() && s.temp.trim() !== '') onSave(s.temp.trim()); s.setEditing(false); };
+  if (s.editing) return h('div', { className: 'flex items-center gap-2' }, h(Input, { value: s.temp, onChange: e => s.setTemp(e.target.value), autoFocus: true, placeholder, className: large ? 'text-2xl font-bold h-12' : 'text-sm h-8', onKeyDown: e => { if (e.key === 'Enter') save(); if (e.key === 'Escape') { s.setTemp(value); s.setEditing(false); } } }), h(OkCancel, { onOk: save, onCancel: () => { s.setTemp(value); s.setEditing(false); } }));
+  return h('span', { onClick: () => s.setEditing(true), title: 'Cliquer pour modifier', className: `cursor-pointer border border-transparent hover:border-dashed hover:border-blue-300 hover:bg-blue-50/50 px-2 py-1 rounded transition-colors ${large ? 'text-2xl font-bold text-gray-900' : 'text-sm'}` }, value || placeholder);
+}
+function InlineEditSelect({ value, options, onSave, displayValue }) {
+  const s = useInline(value);
+  const save = () => { if (s.temp !== value) onSave(s.temp); s.setEditing(false); };
+  if (s.editing) return h('div', { className: 'flex items-center gap-2' }, h(Select, { value: s.temp, onChange: s.setTemp, options, className: 'w-auto min-w-32' }), h(OkCancel, { onOk: save, onCancel: () => { s.setTemp(value); s.setEditing(false); } }));
+  const sel = options.find(o => o.value === value);
+  return h(Badge, { onClick: () => s.setEditing(true), className: `cursor-pointer hover:opacity-80 ${sel?.className || ''}` }, displayValue || sel?.label || value);
+}
+function InlineEditNumber({ value, onSave, formatDisplay, suffix = '', min, max, step = 1 }) {
+  const s = useInline(String(value));
+  const save = () => { const n = Number(s.temp); if (!isNaN(n) && n !== value) onSave(n); s.setEditing(false); };
+  if (s.editing) return h('div', { className: 'flex items-center gap-2' }, h(Input, { type: 'number', value: s.temp, onChange: e => s.setTemp(e.target.value), min, max, step, autoFocus: true, className: 'w-24', onKeyDown: e => { if (e.key === 'Enter') save(); if (e.key === 'Escape') { s.setTemp(String(value)); s.setEditing(false); } } }), h(OkCancel, { onOk: save, onCancel: () => { s.setTemp(String(value)); s.setEditing(false); } }));
+  return h('span', { onClick: () => s.setEditing(true), title: 'Cliquer pour modifier', className: 'cursor-pointer border border-transparent hover:border-dashed hover:border-blue-300 hover:bg-blue-50/50 px-2 py-1 rounded transition-colors' }, formatDisplay ? formatDisplay(value) : `${value}${suffix}`);
+}
+function InlineEditDate({ value, onSave, label }) {
+  const s = useInline(value || '');
+  const save = () => { if (s.temp !== (value || '')) onSave(s.temp || null); s.setEditing(false); };
+  const display = value ? new Date(value + 'T12:00:00').toLocaleDateString('fr-CA') : 'Non définie';
+  if (s.editing) return h('div', { className: 'flex items-center gap-2' }, label && h('span', { className: 'text-sm text-gray-500' }, label + ':'), h(Input, { type: 'date', value: s.temp, onChange: e => s.setTemp(e.target.value), autoFocus: true, className: 'w-40 h-8' }), h(OkCancel, { onOk: save, onCancel: () => { s.setTemp(value || ''); s.setEditing(false); } }));
+  return h('div', { onClick: () => s.setEditing(true), title: 'Cliquer pour modifier', className: 'flex items-center gap-2 cursor-pointer border border-transparent hover:border-dashed hover:border-blue-300 hover:bg-blue-50/50 px-2 py-1 rounded transition-colors' },
+    h(I.Calendar, { className: 'h-3 w-3 text-gray-400' }), h('span', { className: 'text-sm' }, label ? h(React.Fragment, null, h('strong', null, label + ':'), ' ', display) : display));
+}
+function InlineEditTextarea({ value, onSave, placeholder, rows = 4 }) {
+  const s = useInline(value || '');
+  const save = () => { if (s.temp !== (value || '')) onSave(s.temp); s.setEditing(false); };
+  if (s.editing) return h('div', { className: 'space-y-2' }, h('textarea', { value: s.temp, rows, autoFocus: true, onChange: e => s.setTemp(e.target.value), className: 'flex w-full rounded-md border border-gray-200 bg-white px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-950' }), h('div', { className: 'flex gap-2' }, h(Button, { size: 'sm', onClick: save }, 'Enregistrer'), h(Button, { size: 'sm', variant: 'outline', onClick: () => { s.setTemp(value || ''); s.setEditing(false); } }, 'Annuler')));
+  return h('div', { onClick: () => s.setEditing(true), className: 'min-h-[60px] text-sm text-gray-700 whitespace-pre-wrap cursor-pointer border border-transparent hover:border-dashed hover:border-blue-300 hover:bg-blue-50/50 p-2 rounded transition-colors' }, value || h('span', { className: 'text-gray-400' }, placeholder));
 }
 
 // ============================================================
-// VUE PIPELINE
+// CHROME : AppSidebar + ResponsiveHeader (copie visuelle)
 // ============================================================
-function PipelineView({ opps, onOpen, selectedId, showClosed }) {
-  const cols = showClosed ? STAGES : ACTIVE_STAGES;
-  return h('div', { className: 'flex gap-3 overflow-x-auto pb-3 scroll-thin' },
-    ...cols.map(s => {
-      const items = opps.filter(o => o.etape === s.id);
-      const total = items.reduce((a, o) => a + o.valeur, 0);
-      const st = STAGE_STYLE[s.color];
-      return h('div', { key: s.id, className: 'w-[272px] shrink-0 flex flex-col' },
-        h('div', { className: 'rounded-t-lg bg-white border border-slate-200 border-b-0 px-3 pt-2.5 pb-2' },
-          h('div', { className: `h-1 rounded ${st.bar} mb-2` }),
-          h('div', { className: 'flex items-center justify-between' },
-            h('span', { className: 'text-sm font-semibold text-slate-800' }, s.label),
-            h('span', { className: 'text-xs bg-slate-100 text-slate-600 rounded-full px-2 py-0.5' }, items.length)),
-          h('div', { className: 'text-xs text-slate-500 mt-0.5' }, fmtMoney(total))),
-        h('div', { className: 'flex-1 bg-slate-50 border border-slate-200 rounded-b-lg p-2 space-y-2 min-h-[220px]' },
-          items.length === 0 && h('div', { className: 'text-xs text-slate-400 text-center py-6' }, 'Aucune opportunité'),
-          ...items.map(o => h(OppCard, { key: o.id, o, onOpen, selected: o.id === selectedId }))));
-    }));
+function AppSidebar({ collapsed }) {
+  return h('aside', { className: `hidden md:flex flex-col shrink-0 bg-gray-50 border-r border-gray-200 text-gray-700 transition-[width] ${collapsed ? 'w-12' : 'w-64'} sticky top-0 h-screen overflow-y-auto` },
+    h('div', { className: 'border-b border-gray-200 p-4' }, h('div', { className: 'flex items-center space-x-2' }, h(I.Orbit, { className: 'h-8 w-8 text-blue-600 flex-shrink-0' }), !collapsed && h('h1', { className: 'text-xl font-bold text-gray-900' }, 'Orbite'))),
+    h('div', { className: 'p-2' },
+      !collapsed && h('div', { className: 'px-2 py-1.5 text-xs font-medium text-gray-500/70' }, 'Menu principal'),
+      h('ul', { className: 'space-y-0.5' }, ...MENU.map(([id, label, icon]) => h('li', { key: id },
+        h('button', { title: label, className: `w-full flex items-center gap-2 rounded-md px-2 py-1.5 text-sm text-left ${id === 'opportunities' ? 'bg-gray-200 font-medium text-gray-900' : 'hover:bg-gray-200/60'} ${collapsed ? 'justify-center' : 'justify-start'}` },
+          h(I[icon], { className: 'h-5 w-5 shrink-0' }), !collapsed && h('span', { className: 'truncate' }, label)))))));
+}
+function ResponsiveHeader({ onToggle }) {
+  return h('header', { className: 'flex items-center border-b bg-white shadow-sm px-4 py-2 md:px-6 w-full min-w-0' },
+    h('button', { onClick: onToggle, className: 'mr-4 flex-shrink-0 h-7 w-7 inline-flex items-center justify-center rounded-md hover:bg-gray-100', title: 'Toggle Sidebar' }, h(I.PanelLeft, { className: 'h-4 w-4' })),
+    h('div', { className: 'flex-1 min-w-0 flex items-center gap-4' },
+      h('div', { className: 'relative flex-1 max-w-xl' }, h(I.Search, { className: 'absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400' }), h(Input, { placeholder: 'Rechercher (contacts, entreprises, opportunités, projets…)', className: 'pl-10 h-9' })),
+      h('div', { className: 'ml-auto flex items-center gap-2' },
+        h(Button, { variant: 'ghost', size: 'icon', className: 'h-9 w-9', title: 'Notifications' }, h(I.Bell, { className: 'h-5 w-5' })),
+        h(Button, { variant: 'ghost', size: 'icon', className: 'h-9 w-9', title: 'Paramètres' }, h(I.Settings, { className: 'h-5 w-5' })),
+        h('div', { className: 'flex items-center gap-2 pl-2 border-l border-gray-200' }, h('span', { className: 'h-8 w-8 rounded-full bg-blue-600 text-white text-xs font-semibold inline-flex items-center justify-center' }, 'ML'), h('span', { className: 'hidden lg:inline text-sm text-gray-700' }, 'Maxime Leboeuf')))));
 }
 
 // ============================================================
-// VUE LISTE
+// OpportunityKPIs
 // ============================================================
-function ListView({ opps, onOpen, selectedId }) {
-  const [sort, setSort] = useState({ key: 'valeur', dir: 'desc' });
-  const sorted = useMemo(() => {
-    const arr = [...opps];
-    const get = (o) => ({ sante: healthScore(o), etape: STAGES.findIndex(s => s.id === o.etape), nom: o.nom.toLowerCase(), entreprise: o.entreprise.toLowerCase(), owner: OWNER[o.owner].name, valeur: o.valeur, probabilite: o.probabilite, cloture: o.cloture.getTime(), activite: o.lastActivity.getTime() })[sort.key];
-    arr.sort((a, b) => { const x = get(a), y = get(b); return (x < y ? -1 : x > y ? 1 : 0) * (sort.dir === 'asc' ? 1 : -1); });
-    return arr;
-  }, [opps, sort]);
-  const th = (key, label, cls = '') => h('th', { onClick: () => setSort(s => ({ key, dir: s.key === key && s.dir === 'desc' ? 'asc' : 'desc' })),
-      className: `px-3 py-2 text-left text-xs font-semibold text-slate-500 uppercase tracking-wide cursor-pointer select-none hover:text-slate-800 ${cls}` },
-    label, sort.key === key && h('span', { className: 'ml-1 text-indigo-600' }, sort.dir === 'asc' ? '↑' : '↓'));
-  return h('div', { className: 'bg-white rounded-xl border border-slate-200 overflow-hidden' },
-    h('div', { className: 'overflow-x-auto scroll-thin' },
-    h('table', { className: 'w-full text-sm' },
-      h('thead', { className: 'bg-slate-50 border-b border-slate-200' }, h('tr', null,
-        th('sante', 'Santé'), th('nom', 'Opportunité'), th('entreprise', 'Entreprise'), th('etape', 'Étape'), th('owner', 'Responsable'),
-        th('valeur', 'Valeur', 'text-right'), th('probabilite', 'Prob.', 'text-right'), th('cloture', 'Clôture'), th('activite', 'Activité'))),
-      h('tbody', { className: 'divide-y divide-slate-100' },
-        ...sorted.map(o => h('tr', { key: o.id, onClick: () => onOpen(o.id), className: `cursor-pointer hover:bg-indigo-50/50 ${o.id === selectedId ? 'bg-indigo-50' : ''}` },
-          h('td', { className: 'px-3 py-2.5' }, h(HealthDot, { o, withLabel: true })),
-          h('td', { className: 'px-3 py-2.5 font-medium text-slate-900' }, o.nom),
-          h('td', { className: 'px-3 py-2.5 text-slate-600' }, o.entreprise),
-          h('td', { className: 'px-3 py-2.5' }, h(StageChip, { id: o.etape })),
-          h('td', { className: 'px-3 py-2.5' }, h('span', { className: 'inline-flex items-center gap-2' }, h(Avatar, { ownerId: o.owner }), h('span', { className: 'text-slate-600' }, OWNER[o.owner].name))),
-          h('td', { className: 'px-3 py-2.5 text-right font-medium tabular-nums' }, fmtMoney(o.valeur)),
-          h('td', { className: 'px-3 py-2.5 text-right tabular-nums text-slate-600' }, o.probabilite + ' %'),
-          h('td', { className: 'px-3 py-2.5 text-slate-600' }, fmtDate(o.cloture)),
-          h('td', { className: `px-3 py-2.5 ${dormancy(o) === 'critique' ? 'text-rose-600 font-medium' : dormancy(o) === 'attention' ? 'text-amber-700' : 'text-slate-500'}` },
-            daysSince(o.lastActivity) === 0 ? "aujourd'hui" : `il y a ${daysSince(o.lastActivity)} j`))),
-        sorted.length === 0 && h('tr', null, h('td', { colSpan: 9, className: 'px-3 py-10 text-center text-slate-400' }, 'Aucune opportunité ne correspond aux filtres.'))))));
+function OpportunityKPIs({ opportunities }) {
+  const norm = v => String(v || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().trim();
+  const isWon = o => norm(o.etape_funnel) === 'gagnee', isLost = o => norm(o.etape_funnel) === 'perdue';
+  const pipeline = opportunities.filter(o => !isWon(o) && !isLost(o) && norm(o.etape_funnel) !== 'archivee');
+  const totalValue = pipeline.reduce((s, o) => s + (Number(o.valeur_estimee) || 0), 0);
+  const totalWeighted = opportunities.reduce((s, o) => s + ((Number(o.valeur_estimee) || 0) * (o.probabilite_conversion || 0)) / 100, 0);
+  const totalWeightedProfit = opportunities.reduce((s, o) => s + (Number(o.valeur_estimee) || 0) * ((o.probabilite_conversion || 0) / 100) * ((o.profit_estime || 0) / 100), 0);
+  const won = opportunities.filter(isWon); const wonValue = won.reduce((s, o) => s + (Number(o.valeur_estimee) || 0), 0);
+  const conv = opportunities.length ? (won.length / opportunities.length) * 100 : 0;
+  const active = opportunities.filter(o => !['gagnee', 'perdue', 'archivee'].includes(norm(o.etape_funnel)));
+  const avgCycle = active.length ? active.reduce((s, o) => s + daysBetween(NOW, new Date(o.date_creation)), 0) / active.length : 0;
+  const kpis = [
+    { title: 'Pipeline Total', value: `${totalValue.toLocaleString()} CAD`, change: '+12%', trend: 'up', icon: I.DollarSign, color: 'text-blue-600 bg-blue-50' },
+    { title: 'Opportunités Gagnées', value: `${wonValue.toLocaleString()} CAD`, change: '+3%', trend: 'up', icon: I.Award, color: 'text-emerald-600 bg-emerald-50' },
+    { title: 'Profit estimé pondéré', value: `${Math.round(totalWeightedProfit).toLocaleString()} CAD`, change: '+4%', trend: 'up', icon: I.DollarSign, color: 'text-amber-600 bg-amber-50' },
+    { title: 'Valeur Pondérée', value: `${totalWeighted.toLocaleString()} CAD`, change: '+8%', trend: 'up', icon: I.Target, color: 'text-green-600 bg-green-50' },
+    { title: 'Taux de Conversion', value: `${conv.toFixed(1)}%`, change: '-2%', trend: 'down', icon: I.Award, color: 'text-purple-600 bg-purple-50' },
+    { title: 'Cycle Moyen', value: `${Math.round(avgCycle)} jours`, change: '+5j', trend: 'down', icon: I.Clock, color: 'text-orange-600 bg-orange-50' },
+  ];
+  return h('div', { className: 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4' }, ...kpis.map((k, i) => h(Card, { key: i, className: 'hover:shadow-lg transition-shadow' }, h(CardContent, { className: 'p-4' },
+    h('div', { className: 'flex items-center justify-between' },
+      h('div', null, h('p', { className: 'text-sm text-gray-600 mb-1' }, k.title), h('p', { className: 'text-2xl font-bold' }, k.value),
+        h('div', { className: 'flex items-center mt-2 text-sm' }, k.trend === 'up' ? h(I.TrendingUp, { className: 'h-4 w-4 text-green-500 mr-1' }) : h(I.TrendingDown, { className: 'h-4 w-4 text-red-500 mr-1' }), h('span', { className: k.trend === 'up' ? 'text-green-600' : 'text-red-600' }, k.change), h('span', { className: 'text-gray-500 ml-1' }, 'ce mois'))),
+      h('div', { className: `p-3 rounded-lg ${k.color}` }, h(k.icon, { className: 'h-6 w-6' })))))));
 }
 
 // ============================================================
-// FICHE (panneau de droite)
+// DormantOpportunitiesAlert
 // ============================================================
-const TL_ICON = { appel: Phone, courriel: Mail, rencontre: Users, note: StickyNote };
-function Detail({ o, onClose, onAdvance, onWin, onLose, onArchive, onCreate, onEdit }) {
-  const [losing, setLosing] = useState(false);
-  const [motif, setMotif] = useState('');
-  const [menu, setMenu] = useState(false);
-  useEffect(() => { setLosing(false); setMotif(''); setMenu(false); }, [o.id]);
-  const score = healthScore(o); const lvl = HEALTH[healthLevel(score)];
-  const stage = STAGE[o.etape];
-  const idx = STAGES.findIndex(s => s.id === o.etape);
-  const closed = isClosed(o);
-  const section = (title, children) => h('section', { className: 'px-5 py-4 border-b border-slate-100' }, h('h4', { className: 'text-xs font-semibold uppercase tracking-wide text-slate-500 mb-2' }, title), children);
-  const linked = (Icon, label, items, render, kind) => h('div', { className: 'mb-3 last:mb-0' },
-    h('div', { className: 'flex items-center justify-between mb-1' },
-      h('span', { className: 'text-sm font-medium text-slate-700 inline-flex items-center gap-1.5' }, h(Icon, { size: 14 }), label, h('span', { className: 'text-xs text-slate-400' }, `(${items.length})`)),
-      !closed && h('button', { onClick: () => onCreate(kind), className: 'text-xs text-indigo-600 hover:underline' }, '+ Créer')),
-    items.length === 0 ? h('div', { className: 'text-xs text-slate-400 pl-5' }, 'Aucun élément lié') :
-      h('ul', { className: 'space-y-1 pl-5' }, ...items.map((it, i) => h('li', { key: i, className: 'text-sm text-slate-700 flex items-center justify-between gap-2' }, render(it)))));
-
-  return h('aside', { className: 'fixed inset-y-0 right-0 w-full sm:w-[440px] bg-white shadow-2xl border-l border-slate-200 flex flex-col z-30 fadein' },
-    // En-tête
-    h('div', { className: 'px-5 pt-4 pb-3 border-b border-slate-200' },
-      h('div', { className: 'flex items-start justify-between gap-3' },
-        h('div', { className: 'min-w-0' },
-          h('div', { className: 'text-xs text-slate-500 flex items-center gap-1' }, h(Building, { size: 12 }), o.entreprise, ' · ', o.id),
-          h('h3', { className: 'text-lg font-semibold text-slate-900 leading-tight mt-0.5' }, o.nom),
-          h('div', { className: 'mt-2 flex items-center gap-2 flex-wrap' }, h(StageChip, { id: o.etape }),
-            h('span', { className: `inline-flex items-center gap-1.5 text-xs px-2 py-0.5 rounded-full ${lvl.bg} ${lvl.text} ring-1 ${lvl.ring}` }, h('span', { className: `w-2 h-2 rounded-full ${lvl.dot}` }), `Santé ${lvl.label} · ${score}/100`))),
-        h('button', { onClick: onClose, className: 'p-1.5 rounded hover:bg-slate-100 text-slate-500' }, h(X, { size: 18 }))),
-      // Action principale par étape
-      h('div', { className: 'mt-4 flex items-center gap-2' },
-        !closed && stage.action && (o.etape === 'negociation'
-          ? h(React.Fragment, null,
-              h(Btn, { variant: 'success', icon: Check, onClick: onWin }, 'Marquer gagnée'),
-              h(Btn, { variant: 'danger', icon: X, onClick: () => setLosing(v => !v) }, 'Marquer perdue'))
-          : h(Btn, { variant: 'primary', icon: ChevronRight, onClick: onAdvance }, `${stage.action} → ${STAGES[idx + 1].label}`)),
-        closed && o.etape !== 'archivee' && h(Btn, { variant: 'default', icon: Archive, onClick: onArchive }, 'Archiver'),
-        o.etape === 'archivee' && h('span', { className: 'text-sm text-slate-500' }, 'Archivée — lecture seule'),
-        h('div', { className: 'relative ml-auto' },
-          h(Btn, { variant: 'default', onClick: () => setMenu(v => !v), title: 'Autres actions' }, h(MoreHorizontal, { size: 16 })),
-          menu && h('div', { className: 'absolute right-0 mt-1 w-52 bg-white border border-slate-200 rounded-md shadow-lg py-1 z-40 text-sm' },
-            ...[
-              ['Éditer', Edit3, onEdit, false],
-              ['Marquer gagnée', Check, onWin, closed],
-              ['Marquer perdue', X, () => setLosing(true), closed],
-              ['Créer une offre', FileText, () => onCreate('offre'), closed],
-              ['Créer un projet', Briefcase, () => onCreate('projet'), closed],
-              ['Créer une tâche', CheckSquare, () => onCreate('tache'), closed],
-              ['Archiver', Archive, onArchive, o.etape === 'archivee'],
-            ].map(([label, Icon, fn, dis]) => h('button', { key: label, disabled: dis, onClick: () => { setMenu(false); fn(); },
-              className: 'w-full text-left px-3 py-1.5 hover:bg-slate-50 disabled:opacity-40 flex items-center gap-2' }, h(Icon, { size: 14 }), label))))),
-      losing && h('div', { className: 'mt-3 p-3 rounded-md bg-rose-50 border border-rose-200 fadein' },
-        h('div', { className: 'text-sm font-medium text-rose-800 mb-2' }, 'Motif de la perte (obligatoire)'),
-        h('div', { className: 'flex gap-2' },
-          h(Select, { value: motif, onChange: setMotif, placeholder: 'Choisir un motif…', options: LOSS_REASONS.map(r => ({ value: r, label: r })) }),
-          h(Btn, { variant: 'danger', disabled: !motif, onClick: () => { onLose(motif); setLosing(false); } }, 'Confirmer'),
-          h(Btn, { variant: 'ghost', onClick: () => setLosing(false) }, 'Annuler')))),
-    // Corps
-    h('div', { className: 'flex-1 overflow-y-auto scroll-thin' },
-      section('Résumé', h('div', null,
-        h('p', { className: 'text-sm text-slate-700' }, o.resume),
-        o.motifPerte && h('p', { className: 'text-sm text-rose-700 mt-1' }, 'Motif : ', o.motifPerte),
-        h('dl', { className: 'mt-3 grid grid-cols-2 gap-x-4 gap-y-2 text-sm' },
-          ...[['Valeur estimée', fmtMoney(o.valeur)], ['Probabilité', o.probabilite + ' %'], ['Valeur pondérée', fmtMoney(o.valeur * o.probabilite / 100)],
-              ['Clôture prévue', fmtDateLong(o.cloture)], ['Source', o.source], ['Responsable', OWNER[o.owner].name], ['Contact', o.contact], ['Créée le', fmtDateLong(o.createdAt)]]
-            .map(([k, v]) => h('div', { key: k }, h('dt', { className: 'text-xs text-slate-500' }, k), h('dd', { className: 'font-medium text-slate-800' }, v)))))),
-      section('Santé', h('div', null,
-        h('div', { className: 'h-2 rounded bg-slate-100 overflow-hidden' }, h('div', { className: `h-full ${lvl.dot}`, style: { width: score + '%' } })),
-        h('ul', { className: 'mt-2 text-xs text-slate-600 space-y-1' },
-          h('li', null, `Dernière activité : ${daysSince(o.lastActivity) === 0 ? "aujourd'hui" : 'il y a ' + daysSince(o.lastActivity) + ' jours'} ${dormancy(o) ? '— dormante (' + dormancy(o) + ')' : ''}`),
-          h('li', null, `Clôture ${daysUntil(o.cloture) < 0 ? 'dépassée de ' + Math.abs(daysUntil(o.cloture)) + ' jours' : 'dans ' + daysUntil(o.cloture) + ' jours'}`),
-          h('li', null, 'La santé oriente, elle ne bloque rien.')))),
-      section('Éléments liés', h('div', null,
-        linked(FileText, 'Offres', o.offres, it => [h('span', { key: 'a' }, `${it.numero} — ${it.titre}`), h('span', { key: 'b', className: 'text-xs text-slate-500 shrink-0' }, `${fmtMoney(it.montant)} · ${it.etape}`)], 'offre'),
-        linked(Briefcase, 'Projets', o.projets, it => [h('span', { key: 'a' }, it.nom), h('span', { key: 'b', className: 'text-xs text-slate-500 shrink-0' }, it.statut)], 'projet'),
-        linked(CheckSquare, 'Tâches', o.taches, it => [h('span', { key: 'a' }, it.titre), h('span', { key: 'b', className: 'text-xs text-slate-500 shrink-0' }, `${it.statut} · ${fmtDate(it.echeance)}`)], 'tache'))),
-      section('Historique', h('ol', { className: 'relative border-l border-slate-200 ml-2 space-y-4' },
-        ...o.timeline.map((t, i) => { const Icon = TL_ICON[t.type] || StickyNote; return h('li', { key: i, className: 'ml-5' },
-          h('span', { className: 'absolute -left-[9px] w-[18px] h-[18px] rounded-full bg-white border border-slate-300 flex items-center justify-center text-slate-500' }, h(Icon, { size: 10 })),
-          h('div', { className: 'text-xs text-slate-500' }, fmtDateLong(t.date), ' · ', t.type),
-          h('div', { className: 'text-sm text-slate-700' }, t.texte)); })))));
+function DormantOpportunitiesAlert({ dormantOpportunities, warningCount, criticalCount, onSelectOpportunity }) {
+  const [expanded, setExpanded] = useState(true); const [dismissed, setDismissed] = useState(false);
+  if (dismissed || dormantOpportunities.length === 0) return null;
+  const hasCritical = criticalCount > 0; const n = dormantOpportunities.length;
+  return h('div', { className: `rounded-lg border-l-4 p-4 ${hasCritical ? 'border-l-red-500 bg-red-50' : 'border-l-orange-400 bg-orange-50'}` },
+    h('div', { className: 'flex items-center justify-between' },
+      h('div', { className: 'flex items-center gap-3' },
+        hasCritical ? h(I.AlertCircle, { className: 'h-5 w-5 text-red-600 shrink-0' }) : h(I.AlertTriangle, { className: 'h-5 w-5 text-orange-500 shrink-0' }),
+        h('div', null, h('p', { className: `font-semibold text-sm ${hasCritical ? 'text-red-800' : 'text-orange-800'}` }, `${n} opportunité${n > 1 ? 's' : ''} dormante${n > 1 ? 's' : ''}`),
+          h('p', { className: `text-xs ${hasCritical ? 'text-red-600' : 'text-orange-600'}` }, criticalCount > 0 && h('span', { className: 'mr-2' }, `${criticalCount} critique${criticalCount > 1 ? 's' : ''} (+${DORMANT_CRITICAL_DAYS}j sans activité)`), warningCount > 0 && h('span', null, `${warningCount} en alerte${warningCount > 1 ? 's' : ''} (+${DORMANT_WARNING_DAYS}j sans activité)`))),
+        h('div', { className: 'flex gap-1 ml-2' }, criticalCount > 0 && h(Badge, { className: 'bg-red-100 text-red-700 text-xs border-transparent' }, `${criticalCount} critique${criticalCount > 1 ? 's' : ''}`), warningCount > 0 && h(Badge, { className: 'bg-orange-100 text-orange-700 text-xs border-transparent' }, `${warningCount} alerte${warningCount > 1 ? 's' : ''}`))),
+      h('div', { className: 'flex items-center gap-1' },
+        h(Button, { variant: 'ghost', size: 'sm', onClick: () => setExpanded(!expanded), className: `h-7 px-2 ${hasCritical ? 'text-red-700 hover:bg-red-100' : 'text-orange-700 hover:bg-orange-100'}` }, expanded ? h(I.ChevronUp, { className: 'h-4 w-4' }) : h(I.ChevronDown, { className: 'h-4 w-4' })),
+        h(Button, { variant: 'ghost', size: 'sm', onClick: () => setDismissed(true), title: 'Masquer pour cette session', className: `h-7 px-2 ${hasCritical ? 'text-red-700 hover:bg-red-100' : 'text-orange-700 hover:bg-orange-100'}` }, h(I.X, { className: 'h-4 w-4' })))),
+    expanded && h('div', { className: 'mt-3 space-y-1' }, ...dormantOpportunities.map(o => h('button', { key: o.id, onClick: () => onSelectOpportunity(o.id), className: `w-full text-left flex items-center justify-between px-3 py-2 rounded-md text-sm transition-colors ${o.dormancyLevel === 'critical' ? 'hover:bg-red-100 text-red-800' : 'hover:bg-orange-100 text-orange-800'}` },
+      h('div', { className: 'flex items-center gap-2 min-w-0' }, o.dormancyLevel === 'critical' ? h(I.AlertCircle, { className: 'h-3.5 w-3.5 text-red-500 shrink-0' }) : h(I.AlertTriangle, { className: 'h-3.5 w-3.5 text-orange-400 shrink-0' }), h('span', { className: 'font-medium truncate' }, o.nom_opportunite), o.client_nom && h('span', { className: 'text-xs opacity-70 truncate' }, `— ${o.client_nom}`)),
+      h('div', { className: 'flex items-center gap-2 shrink-0 ml-2' }, h(Badge, { variant: 'outline', className: `text-xs ${o.dormancyLevel === 'critical' ? 'border-red-300 text-red-700' : 'border-orange-300 text-orange-700'}` }, o.etape_funnel), h('span', { className: 'flex items-center gap-1 text-xs opacity-70 whitespace-nowrap' }, h(I.Clock, { className: 'h-3 w-3' }), `${o.daysSinceUpdate}j`))))));
 }
 
 // ============================================================
-// APP
+// Dashboard : RevenueTimeline (recharts), Funnel, Heatmap, Radar (recharts)
+// ============================================================
+function OpportunityRevenueTimeline({ opportunities }) {
+  const { monthlyData, opportunityColorMap, totalValeurPonderee, totalCount } = useMemo(() => buildOpportunityRevenueTimeline(opportunities), [opportunities]);
+  const CustomTooltip = ({ active, payload, label }) => {
+    if (!(active && payload && payload.length)) return null;
+    const m = monthlyData.find(x => x.mois === label); const opps = m?.opportunities || []; const total = m?.total || 0;
+    return h('div', { className: 'bg-white p-3 border rounded-lg shadow-lg max-w-xs' }, h('p', { className: 'font-semibold text-gray-900 mb-2' }, label),
+      h('div', { className: 'space-y-1 max-h-60 overflow-y-auto' }, ...opps.map(o => h('div', { key: o.id, className: 'flex items-center justify-between gap-3 text-sm' },
+        h('div', { className: 'flex items-center gap-2 flex-1 min-w-0' }, h('div', { className: 'w-3 h-3 rounded flex-shrink-0', style: { backgroundColor: o.color } }), h('span', { className: 'truncate text-gray-700' }, o.nom, o.dureeReceptionMois > 1 && h('span', { className: 'text-blue-500 ml-1 text-xs' }, `(${o.dureeReceptionMois}m ${o.modeRepartition === 'manuel' ? '✎' : '⚖'})`))),
+        h('span', { className: 'text-green-600 font-semibold flex-shrink-0' }, `$${o.valeurPonderee.toLocaleString()}`)))),
+      opps.length > 0 && h('div', { className: 'mt-2 pt-2 border-t' }, h('div', { className: 'flex justify-between items-center' }, h('span', { className: 'text-sm font-semibold text-gray-900' }, 'Total:'), h('span', { className: 'text-sm font-bold text-green-600' }, `$${total.toLocaleString()} CAD`))));
+  };
+  return h(Card, { className: 'col-span-full' },
+    h(CardHeader, null, h('div', { className: 'flex items-center justify-between' },
+      h(CardTitle, { className: 'flex items-center gap-2' }, h(I.TrendingUp, { className: 'h-5 w-5 text-green-600' }), 'Projection de revenus (12 prochains mois)'),
+      h('div', { className: 'text-right' }, h('p', { className: 'text-gray-500' }, 'Total prévu (pondéré)'), h('p', { className: 'font-bold text-green-600 text-xl' }, `$${totalValeurPonderee.toLocaleString()} CAD`), h('p', { className: 'text-sm text-gray-500 mt-1' }, `${totalCount} opportunité${totalCount > 1 ? 's' : ''}`)))),
+    h(CardContent, null,
+      h('div', { className: 'h-80' }, RC.ResponsiveContainer ? h(RC.ResponsiveContainer, { width: '100%', height: '100%' },
+        h(RC.BarChart, { data: monthlyData, margin: { top: 10, right: 30, left: 0, bottom: 0 } },
+          h(RC.CartesianGrid, { strokeDasharray: '3 3', stroke: '#E5E7EB' }),
+          h(RC.XAxis, { dataKey: 'mois', tick: { fontSize: 12 }, angle: -45, textAnchor: 'end', height: 80 }),
+          h(RC.YAxis, { tick: { fontSize: 12 }, tickFormatter: v => `${Math.round(v / 1000)}k` }),
+          h(RC.Tooltip, { content: h(CustomTooltip) }),
+          ...Array.from(opportunityColorMap.entries()).map(([id, d]) => h(RC.Bar, { key: id, dataKey: `opp_${id}`, stackId: 'a', fill: d.color })))) : h('div', { className: 'text-sm text-gray-400' }, 'Graphique indisponible')),
+      h('div', { className: 'mt-4 p-3 bg-blue-50 rounded-lg' }, h('p', { className: 'text-sm text-gray-700' }, h('strong', null, '💡 Info:'), ' Chaque couleur = une opportunité. Les opportunités étalées (⚖) sont réparties équitablement, les manuelles (✎) suivent vos montants personnalisés. Les valeurs tiennent compte de la probabilité de conversion.'))));
+}
+function OpportunityFunnel({ opportunities, onEtapeClick }) {
+  const order = ['Nouveau', 'Qualification', 'Proposition', 'Négociation', 'Gagnée', 'Perdue'];
+  const colors = { 'Nouveau': 'bg-gray-500', 'Qualification': 'bg-blue-500', 'Proposition': 'bg-yellow-500', 'Négociation': 'bg-orange-500', 'Gagnée': 'bg-green-500', 'Perdue': 'bg-red-500' };
+  const data = order.map(e => { const l = opportunities.filter(o => o.etape_funnel === e); return { etape: e, count: l.length, value: l.reduce((s, o) => s + (Number(o.valeur_estimee) || 0), 0) }; });
+  const max = Math.max(...data.map(d => d.count), 1);
+  return h(Card, { className: 'h-full' }, h(CardHeader, null, h(CardTitle, { className: 'flex items-center gap-2' }, '📊 Funnel Commercial Interactif')),
+    h(CardContent, null, h('div', { className: 'space-y-3' }, ...data.map(d => { const w = d.count > 0 ? (d.count / max) * 100 : 5; return h('div', { key: d.etape, className: 'cursor-pointer transition-all hover:scale-105', onClick: () => onEtapeClick(d.etape) },
+      h('div', { className: 'flex items-center justify-between mb-1' }, h('span', { className: 'text-sm font-medium' }, d.etape), h(Badge, { variant: 'outline', className: 'border-gray-200' }, d.count)),
+      h('div', { className: 'relative' }, h('div', { className: 'h-8 bg-gray-100 rounded-lg overflow-hidden' }, h('div', { className: `h-full ${colors[d.etape]} transition-all duration-500 flex items-center justify-center text-white text-xs font-medium rounded-lg`, style: { width: w + '%' } }, d.value > 0 && `${d.value.toLocaleString()} CAD`)))); }))));
+}
+function OpportunityHeatmap({ opportunities }) {
+  const start = new Date(NOW); start.setDate(start.getDate() - 7 * 11); const dow = (start.getDay() + 6) % 7; start.setDate(start.getDate() - dow);
+  const end = new Date(NOW); const edow = (end.getDay() + 6) % 7; end.setDate(end.getDate() + (6 - edow));
+  const days = []; for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) days.push(new Date(d));
+  const daily = days.map(day => { const k = iso(day); const l = opportunities.filter(o => o.date_creation === k); return { date: day, count: l.length, value: l.reduce((s, o) => s + (Number(o.valeur_estimee) || 0), 0) }; });
+  const max = Math.max(...daily.map(d => d.value), 1);
+  const intensity = v => { if (v === 0) return 'bg-gray-100'; const i = (v / max) * 4; return i <= 1 ? 'bg-blue-200' : i <= 2 ? 'bg-blue-300' : i <= 3 ? 'bg-blue-400' : 'bg-blue-500'; };
+  const weeks = []; for (let i = 0; i < daily.length; i += 7) weeks.push(daily.slice(i, i + 7));
+  return h(Card, { className: 'h-full' }, h(CardHeader, null, h(CardTitle, { className: 'flex items-center gap-2' }, '🔥 Activité des Opportunités (12 semaines)')),
+    h(CardContent, null, h('div', { className: 'space-y-1' }, ...weeks.map((w, wi) => h('div', { key: wi, className: 'flex gap-1' }, ...w.map((d, di) => h('div', { key: di, title: `${d.date.getDate()} ${MOIS_FR[d.date.getMonth()]}: ${d.count} opportunités, ${d.value.toLocaleString()} CAD`, className: `w-3 h-3 rounded-sm ${intensity(d.value)} cursor-pointer transition-all hover:scale-125` }))))),
+      h('div', { className: 'flex items-center justify-between mt-4 text-xs text-gray-500' }, h('span', null, 'Moins'), h('div', { className: 'flex gap-1' }, ...['bg-gray-100', 'bg-blue-200', 'bg-blue-300', 'bg-blue-400', 'bg-blue-500'].map(c => h('div', { key: c, className: `w-3 h-3 ${c} rounded-sm` }))), h('span', null, 'Plus'))));
+}
+function OpportunityRadar({ opportunities }) {
+  const data = SOURCE_OPTIONS.map(src => { const l = opportunities.filter(o => o.source_opportunite === src); const c = l.length; const avg = c ? l.reduce((s, o) => s + (Number(o.valeur_estimee) || 0), 0) / c : 0; const won = l.filter(o => o.etape_funnel === 'Gagnée'); return { source: src.replace(' ', '\n'), count: c, avgValue: Math.round(avg / 1000), conversion: c ? Math.round(won.length / c * 100) : 0 }; });
+  return h(Card, { className: 'h-full' }, h(CardHeader, null, h(CardTitle, { className: 'flex items-center gap-2' }, '🎯 Performance par Source')),
+    h(CardContent, null, h('div', { className: 'h-64' }, RC.ResponsiveContainer ? h(RC.ResponsiveContainer, { width: '100%', height: '100%' }, h(RC.RadarChart, { data },
+      h(RC.PolarGrid), h(RC.PolarAngleAxis, { dataKey: 'source', className: 'text-xs' }), h(RC.PolarRadiusAxis, { angle: 90, domain: [0, 100], className: 'text-xs' }),
+      h(RC.Radar, { name: 'Nombre', dataKey: 'count', stroke: '#3B82F6', fill: '#3B82F6', fillOpacity: 0.1, strokeWidth: 2 }),
+      h(RC.Radar, { name: 'Valeur Moy. (k CAD)', dataKey: 'avgValue', stroke: '#10B981', fill: '#10B981', fillOpacity: 0.1, strokeWidth: 2 }),
+      h(RC.Radar, { name: 'Taux Conv. (%)', dataKey: 'conversion', stroke: '#F59E0B', fill: '#F59E0B', fillOpacity: 0.1, strokeWidth: 2 }))) : null),
+      h('div', { className: 'flex justify-center gap-4 mt-2 text-xs' }, ...[['bg-blue-500', 'Nombre'], ['bg-green-500', 'Valeur Moy.'], ['bg-yellow-500', 'Taux Conv.']].map(([c, l]) => h('div', { key: l, className: 'flex items-center gap-1' }, h('div', { className: `w-3 h-3 ${c} rounded` }), h('span', null, l))))));
+}
+
+// ============================================================
+// OpportunityFilters (vue Table)
+// ============================================================
+function OpportunityFilters({ filters, onFilterChange, onClearFilters, activeFiltersCount }) {
+  const [showAdvanced, setShowAdvanced] = useState(false);
+  const toggleIn = (key, v) => onFilterChange(key, filters[key].includes(v) ? filters[key].filter(x => x !== v) : [...filters[key], v]);
+  return h(Card, { className: 'mb-6' }, h(CardContent, { className: 'p-4' },
+    h('div', { className: 'flex flex-col md:flex-row gap-4 mb-4' },
+      h('div', { className: 'flex-1 relative' }, h(I.Search, { className: 'absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4' }), h(Input, { placeholder: 'Rechercher dans les opportunités...', value: filters.search, onChange: e => onFilterChange('search', e.target.value), className: 'pl-10' })),
+      h('div', { className: 'flex gap-2' },
+        h(Button, { variant: 'outline', onClick: () => setShowAdvanced(!showAdvanced), className: 'flex items-center gap-2' }, h(I.Filter, { className: 'h-4 w-4' }), 'Filtres', activeFiltersCount > 0 && h(Badge, { variant: 'secondary', className: 'ml-1' }, activeFiltersCount)),
+        activeFiltersCount > 0 && h(Button, { variant: 'outline', onClick: onClearFilters, className: 'flex items-center gap-2' }, h(I.X, { className: 'h-4 w-4' }), 'Effacer'))),
+    h('div', { className: 'mb-4' }, h(Label, { className: 'text-sm font-medium mb-2 flex items-center gap-2' }, h(I.Target, { className: 'h-4 w-4' }), 'Étapes du funnel'),
+      h('div', { className: 'flex flex-wrap gap-2' }, ...ALL_ETAPES.map(e => h(Badge, { key: e, variant: filters.etapes.includes(e) ? 'default' : 'outline', onClick: () => toggleIn('etapes', e), className: `cursor-pointer transition-colors ${filters.etapes.includes(e) ? `${ETAPE_COLORS[e]} ${ETAPE_HOVER[e]}` : 'hover:bg-gray-100 border-gray-200'}` }, e)))),
+    showAdvanced && h('div', { className: 'space-y-6 pt-4 border-t' },
+      h('div', null, h(Label, { className: 'text-sm font-medium mb-2 flex items-center gap-2' }, h(I.DollarSign, { className: 'h-4 w-4' }), 'Valeur estimée (CAD)'),
+        h('div', { className: 'px-3' }, h('div', { className: 'flex gap-2 mb-2' }, h('input', { type: 'range', min: 0, max: 1000000, step: 1000, value: filters.valueRange.min, onChange: e => onFilterChange('valueRange', { ...filters.valueRange, min: Math.min(Number(e.target.value), filters.valueRange.max) }), className: 'w-full' }), h('input', { type: 'range', min: 0, max: 1000000, step: 1000, value: filters.valueRange.max, onChange: e => onFilterChange('valueRange', { ...filters.valueRange, max: Math.max(Number(e.target.value), filters.valueRange.min) }), className: 'w-full' })),
+          h('div', { className: 'flex justify-between text-sm text-gray-600' }, h('span', null, `${filters.valueRange.min.toLocaleString()} CAD`), h('span', null, `${filters.valueRange.max.toLocaleString()} CAD`)))),
+      h('div', null, h(Label, { className: 'text-sm font-medium mb-2' }, 'Probabilité de conversion (%)'),
+        h('div', { className: 'px-3' }, h('div', { className: 'flex gap-2 mb-2' }, h('input', { type: 'range', min: 0, max: 100, step: 5, value: filters.probabilityRange.min, onChange: e => onFilterChange('probabilityRange', { ...filters.probabilityRange, min: Math.min(Number(e.target.value), filters.probabilityRange.max) }), className: 'w-full' }), h('input', { type: 'range', min: 0, max: 100, step: 5, value: filters.probabilityRange.max, onChange: e => onFilterChange('probabilityRange', { ...filters.probabilityRange, max: Math.max(Number(e.target.value), filters.probabilityRange.min) }), className: 'w-full' })),
+          h('div', { className: 'flex justify-between text-sm text-gray-600' }, h('span', null, `${filters.probabilityRange.min}%`), h('span', null, `${filters.probabilityRange.max}%`)))),
+      h('div', null, h(Label, { className: 'text-sm font-medium mb-2 flex items-center gap-2' }, h(I.Users, { className: 'h-4 w-4' }), "Sources d'opportunité"),
+        h('div', { className: 'flex flex-wrap gap-2' }, ...SOURCE_OPTIONS.map(s => h(Badge, { key: s, variant: filters.sources.includes(s) ? 'default' : 'outline', onClick: () => toggleIn('sources', s), className: 'cursor-pointer hover:bg-gray-100 border-gray-200' }, s)))),
+      h('div', { className: 'grid grid-cols-1 md:grid-cols-2 gap-4' },
+        h('div', null, h(Label, { className: 'text-sm font-medium mb-2 flex items-center gap-2' }, h(I.Calendar, { className: 'h-4 w-4' }), 'Date de début'), h(Input, { type: 'date', value: filters.dateRange?.start || '', onChange: e => onFilterChange('dateRange', { ...(filters.dateRange || { start: '', end: '' }), start: e.target.value }) })),
+        h('div', null, h(Label, { className: 'text-sm font-medium mb-2' }, 'Date de fin'), h(Input, { type: 'date', value: filters.dateRange?.end || '', onChange: e => onFilterChange('dateRange', { ...(filters.dateRange || { start: '', end: '' }), end: e.target.value }) }))))));
+}
+const initialFilters = { etapes: [], dateRange: null, valueRange: { min: 0, max: 1000000 }, clients: [], sources: [], probabilityRange: { min: 0, max: 100 }, search: '' };
+function useOpportunityFilters(opps) {
+  const [filters, setFilters] = useState(initialFilters);
+  const filtered = useMemo(() => opps.filter(o => {
+    if (filters.etapes.length > 0 && !filters.etapes.includes(o.etape_funnel)) return false;
+    if (filters.dateRange && filters.dateRange.start && filters.dateRange.end) { const d = new Date(o.date_creation); if (d < new Date(filters.dateRange.start) || d > new Date(filters.dateRange.end)) return false; }
+    const v = Number(o.valeur_estimee) || 0; if (v < filters.valueRange.min || v > filters.valueRange.max) return false;
+    if (filters.sources.length > 0 && !filters.sources.includes(o.source_opportunite)) return false;
+    const p = o.probabilite_conversion || 0; if (p < filters.probabilityRange.min || p > filters.probabilityRange.max) return false;
+    if (filters.search) { const t = `${o.nom_opportunite} ${o.description} ${o.clients?.nom}`.toLowerCase(); if (!t.includes(filters.search.toLowerCase())) return false; }
+    return true;
+  }), [opps, filters]);
+  const activeFiltersCount = useMemo(() => { let c = 0; if (filters.etapes.length) c++; if (filters.dateRange) c++; if (filters.valueRange.min > 0 || filters.valueRange.max < 1000000) c++; if (filters.sources.length) c++; if (filters.probabilityRange.min > 0 || filters.probabilityRange.max < 100) c++; if (filters.search) c++; return c; }, [filters]);
+  return { filters, filteredOpportunities: filtered, updateFilter: (k, v) => setFilters(p => ({ ...p, [k]: v })), clearFilters: () => setFilters(initialFilters), activeFiltersCount };
+}
+
+// ============================================================
+// OpportunitiesListView (vue Liste — par défaut)
+// ============================================================
+const getChaleurRange = p => { p = p ?? 0; return p <= 25 ? '0-25' : p <= 50 ? '26-50' : p <= 75 ? '51-75' : '76-100'; };
+const getChaleurBarColor = p => p >= 76 ? 'bg-green-500' : p >= 51 ? 'bg-blue-500' : p >= 26 ? 'bg-orange-500' : 'bg-red-400';
+const getInitials = (p, n) => `${(p || '')[0] || ''}${(n || '')[0] || ''}`.toUpperCase();
+const getAvatarColor = name => { const colors = ['bg-blue-500', 'bg-green-500', 'bg-purple-500', 'bg-orange-500', 'bg-pink-500', 'bg-teal-500', 'bg-indigo-500', 'bg-cyan-500']; let hash = 0; for (let i = 0; i < name.length; i++) hash = name.charCodeAt(i) + ((hash << 5) - hash); return colors[Math.abs(hash) % colors.length]; };
+function OpportunitiesListView({ opportunities, users, onFieldUpdate, onOpenDetail }) {
+  const [healthFilters, setHealth] = useState(() => new Set(['critical', 'warning', 'good', 'excellent']));
+  const [chaleurRanges, setChaleur] = useState(() => new Set(CHALEUR_RANGES));
+  const [etapeFilters, setEtapes] = useState(() => new Set(DEFAULT_ETAPES));
+  const toggle = (setter) => (v) => setter(prev => { const n = new Set(prev); n.has(v) ? n.delete(v) : n.add(v); return n; });
+  const processed = useMemo(() => {
+    const out = [];
+    for (const opp of opportunities) {
+      if (!etapeFilters.has(opp.etape_funnel)) continue;
+      const health = calculateHealthScore(opp, LAST_INTERACTIONS.get(opp.id));
+      if (!healthFilters.has(health.level)) continue;
+      if (!chaleurRanges.has(getChaleurRange(opp.probabilite_conversion))) continue;
+      out.push({ opp, health });
+    }
+    out.sort((a, b) => { const hd = healthLevelOrder(a.health.level) - healthLevelOrder(b.health.level); if (hd) return hd; const ca = a.opp.probabilite_conversion ?? 0, cb = b.opp.probabilite_conversion ?? 0; if (cb !== ca) return cb - ca; const da = a.opp.date_cloture_estimee, db = b.opp.date_cloture_estimee; if (da && db) return da.localeCompare(db); if (da && !db) return -1; if (!da && db) return 1; return 0; });
+    return out;
+  }, [opportunities, healthFilters, chaleurRanges, etapeFilters]);
+  const totalValue = processed.reduce((s, { opp }) => s + (Number(opp.valeur_estimee) || 0), 0);
+  const userOptions = useMemo(() => [{ value: '', label: 'Non assigne' }, ...users.map(u => ({ value: u.id, label: `${u.prenom} ${u.nom}` }))], [users]);
+  const chip = (active, activeClass, label, onClick) => h('button', { key: label, type: 'button', onClick, className: `px-2.5 py-1 text-xs font-medium rounded-full border transition-colors ${active ? activeClass : 'bg-white text-gray-400 border-gray-200'}` }, label);
+  return h('div', { className: 'space-y-4' },
+    h('div', { className: 'flex flex-wrap items-center gap-3 bg-white border rounded-lg px-4 py-3' },
+      h('span', { className: 'text-xs font-semibold text-gray-500 uppercase tracking-wide' }, 'Sante'),
+      h('div', { className: 'flex items-center gap-1.5' }, ...HEALTH_LEVELS.map(({ level, label, activeClass }) => chip(healthFilters.has(level), activeClass, label, () => toggle(setHealth)(level)))),
+      h('span', { className: 'text-gray-300' }, '|'),
+      h('span', { className: 'text-xs font-semibold text-gray-500 uppercase tracking-wide' }, 'Chaleur'),
+      h('div', { className: 'flex items-center gap-1.5' }, ...CHALEUR_RANGES.map(r => chip(chaleurRanges.has(r), 'bg-gray-100 text-gray-700 border-gray-300', r + '%', () => toggle(setChaleur)(r)))),
+      h('span', { className: 'text-gray-300' }, '|'),
+      h('span', { className: 'text-xs font-semibold text-gray-500 uppercase tracking-wide' }, 'Etape'),
+      h('div', { className: 'flex items-center gap-1.5' }, ...ALL_ETAPES.map(e => chip(etapeFilters.has(e), ETAPE_BADGE_COLORS[e], e, () => toggle(setEtapes)(e)))),
+      h('span', { className: 'text-gray-300' }, '|'),
+      h('span', { className: 'text-xs text-gray-400' }, 'Tri: Sante ASC / Chaleur DESC / Date cloture ASC')),
+    h('div', { className: 'bg-white rounded-lg shadow border' },
+      h(Table, null, h(THead, null, h(TR, null, h(TH, { className: 'w-20' }, 'Sante'), h(TH, null, 'Opportunite'), h(TH, null, 'Client'), h(TH, null, 'Etape'), h(TH, null, 'Responsable'), h(TH, null, 'Valeur'), h(TH, null, 'Chaleur'), h(TH, null, 'Date cloture'), h(TH, { className: 'w-16' }, 'Entites'))),
+        h(TBody, null, ...processed.map(({ opp, health }) => {
+          const p = opp.probabilite_conversion ?? 0; const resp = users.find(u => u.id === opp.responsable_id); const respDisplay = resp ? `${resp.prenom} ${resp.nom}` : 'Non assigne';
+          const stop = e => e.stopPropagation();
+          return h(TR, { key: opp.id, className: 'hover:bg-gray-50 cursor-pointer transition-colors', onClick: () => onOpenDetail(opp.id) },
+            h(TD, null, h('div', { className: 'flex items-center gap-2' }, h('span', { className: `inline-block w-2 h-2 rounded-full ${health.dotColor}` }), h('span', { className: `text-xs font-medium ${health.color}` }, health.label))),
+            h(TD, { onClick: stop }, h(InlineEditText, { value: opp.nom_opportunite || '', onSave: v => onFieldUpdate(opp.id, 'nom_opportunite', v) })),
+            h(TD, null, h('span', { className: 'text-sm text-gray-700' }, opp.clients?.nom || '—')),
+            h(TD, { onClick: stop }, h(InlineEditSelect, { value: opp.etape_funnel, options: etapeOptions, onSave: v => onFieldUpdate(opp.id, 'etape_funnel', v) })),
+            h(TD, { onClick: stop }, h('div', { className: 'flex items-center gap-2' }, resp && h('span', { className: `inline-flex items-center justify-center w-6 h-6 rounded-full text-white text-[10px] font-semibold ${getAvatarColor(respDisplay)}` }, getInitials(resp.prenom, resp.nom)), h(InlineEditSelect, { value: opp.responsable_id || '', options: userOptions, onSave: v => onFieldUpdate(opp.id, 'responsable_id', v || null), displayValue: respDisplay }))),
+            h(TD, { onClick: stop }, h(InlineEditNumber, { value: Number(opp.valeur_estimee) || 0, onSave: v => onFieldUpdate(opp.id, 'valeur_estimee', v), formatDisplay: v => `$${v.toLocaleString()} CAD`, min: 0, step: 100 })),
+            h(TD, { onClick: stop }, h('div', { className: 'flex items-center gap-2' }, h(InlineEditNumber, { value: p, onSave: v => onFieldUpdate(opp.id, 'probabilite_conversion', v), suffix: '%', min: 0, max: 100, step: 5 }), h('div', { className: 'w-[50px] h-[5px] bg-gray-200 rounded-full overflow-hidden' }, h('div', { className: `h-full rounded-full transition-all ${getChaleurBarColor(p)}`, style: { width: p + '%' } })))),
+            h(TD, { onClick: stop }, h(InlineEditDate, { value: opp.date_cloture_estimee || null, onSave: v => onFieldUpdate(opp.id, 'date_cloture_estimee', v) })),
+            h(TD, null, h('span', { className: 'text-sm text-gray-400' }, '—')));
+        }))),
+      processed.length === 0 && h('div', { className: 'text-center py-12' }, h(I.Eye, { className: 'h-12 w-12 text-gray-300 mx-auto mb-4' }), h('h3', { className: 'text-lg font-medium text-gray-900 mb-2' }, 'Aucune opportunite ne correspond aux filtres'), h('p', { className: 'text-gray-500' }, 'Essayez de modifier vos criteres de filtrage.'))),
+    h('div', { className: 'flex items-center justify-between text-sm text-gray-600 px-1' }, h('span', null, `${processed.length} opportunite${processed.length > 1 ? 's' : ''}`), h('span', null, 'Valeur totale : ', h('span', { className: 'font-semibold' }, `$${totalValue.toLocaleString()} CAD`))));
+}
+
+// ============================================================
+// OpportunityDetailDialog
+// ============================================================
+function OpportunityMetricCard({ title, subtitle, icon: Icon, color, children }) {
+  const border = { green: 'border-l-green-500 bg-green-50/50', blue: 'border-l-blue-500 bg-blue-50/50', purple: 'border-l-purple-500 bg-purple-50/50' }[color];
+  const ic = { green: 'text-green-600', blue: 'text-blue-600', purple: 'text-purple-600' }[color];
+  return h(Card, { className: `border-l-4 ${border}` }, h(CardHeader, { className: 'pb-3' }, h('div', { className: 'flex items-center justify-between' }, h('div', null, h(CardTitle, { className: 'text-base font-semibold' }, title), subtitle && h('p', { className: 'text-xs text-gray-500 mt-1' }, subtitle)), h(Icon, { className: `h-5 w-5 ${ic}` }))), h(CardContent, null, children));
+}
+function OpportunityHealthIndicator({ opportunity, lastInteractionDate }) {
+  const health = calculateHealthScore(opportunity, lastInteractionDate);
+  const Icon = { excellent: I.CheckCircle, good: I.Activity, warning: I.AlertTriangle, critical: I.AlertCircle }[health.level];
+  return h(Card, { className: 'border-l-4 border-l-blue-500' },
+    h(CardHeader, { className: 'pb-3' }, h('div', { className: 'flex items-center justify-between' }, h(CardTitle, { className: 'text-base font-semibold' }, "Santé de l'opportunité"), h(Badge, { className: `${health.bgColor} ${health.color} border-transparent` }, health.label))),
+    h(CardContent, { className: 'space-y-4' },
+      h('div', { className: 'flex items-center gap-4' }, h('div', { className: 'flex items-center justify-center w-16 h-16 rounded-full bg-gray-100' }, h(Icon, { className: `h-8 w-8 ${health.color}` })),
+        h('div', { className: 'flex-1' }, h('div', { className: 'flex items-baseline gap-2' }, h('span', { className: 'text-3xl font-bold text-gray-900' }, health.score), h('span', { className: 'text-sm text-gray-500' }, '/100')),
+          h('div', { className: 'w-full bg-gray-200 rounded-full h-2 mt-2' }, h('div', { className: `h-2 rounded-full transition-all ${{ excellent: 'bg-green-500', good: 'bg-blue-500', warning: 'bg-orange-500', critical: 'bg-red-500' }[health.level]}`, style: { width: health.score + '%' } })))),
+      h('div', { className: 'space-y-2' }, h('h4', { className: 'text-sm font-medium text-gray-700' }, 'Recommandations'), h('ul', { className: 'space-y-1' }, ...health.recommendations.map((r, i) => h('li', { key: i, className: 'text-sm text-gray-600 flex items-start gap-2' }, h('span', { className: 'text-gray-400 mt-0.5' }, '•'), h('span', null, r)))))));
+}
+function OpportunityDetailDialog({ opportunity, users, onClose, onFieldUpdate, onDelete }) {
+  const [tab, setTab] = useState('overview');
+  const [duree, setDuree] = useState(opportunity.duree_reception_paiement_mois || 1);
+  const [mode, setMode] = useState(opportunity.mode_repartition || 'auto');
+  const [montants, setMontants] = useState(Array.isArray(opportunity.repartition_mensuelle) ? opportunity.repartition_mensuelle : []);
+  useEffect(() => { setDuree(opportunity.duree_reception_paiement_mois || 1); setMode(opportunity.mode_repartition || 'auto'); setMontants(Array.isArray(opportunity.repartition_mensuelle) ? opportunity.repartition_mensuelle : []); }, [opportunity.id]);
+  const saveRep = (d, m, mm) => { onFieldUpdate(opportunity.id, 'duree_reception_paiement_mois', d); onFieldUpdate(opportunity.id, 'mode_repartition', m); onFieldUpdate(opportunity.id, 'repartition_mensuelle', m === 'manuel' ? mm : null); };
+  const interactions = INTERACTIONS.filter(i => i.opportunite_id === opportunity.id).sort((a, b) => b.date_interaction.localeCompare(a.date_interaction));
+  const rel = RELATED[opportunity.id] || {};
+  const weighted = ((Number(opportunity.valeur_estimee) || 0) * (opportunity.probabilite_conversion || 0)) / 100;
+  const stop = e => e.stopPropagation();
+  const tabBtn = (id, Icon, label, extra) => h(TabsTrigger, { key: id, active: tab === id, onClick: () => setTab(id), className: 'flex items-center gap-2' }, h(Icon, { className: 'h-4 w-4' }), label, extra);
+  const emptyBlock = (Icon, text, btn) => h('div', { className: 'text-center py-8 bg-gray-50 rounded-lg' }, h(Icon, { className: 'h-12 w-12 text-gray-300 mx-auto mb-2' }), h('p', { className: `text-gray-500 ${btn ? 'mb-3' : ''}` }, text), btn && h(Button, { size: 'sm', variant: 'outline' }, h(I.Plus, { className: 'h-4 w-4 mr-2' }), btn));
+  const relCard = (title, lines) => h(Card, { className: 'hover:shadow-md transition-shadow' }, h(CardContent, { className: 'p-4' }, h('div', { className: 'font-medium text-gray-900 mb-1' }, title), ...lines.map((l, i) => h('div', { key: i, className: 'text-sm text-gray-600' }, l))));
+  const respOptions = [{ value: '__none__', label: 'Non assigné' }, ...users.map(u => ({ value: u.id, label: `${u.prenom} ${u.nom}` }))];
+  const respDisplay = !opportunity.responsable_id ? 'Non assigné' : (users.find(u => u.id === opportunity.responsable_id) ? `${users.find(u => u.id === opportunity.responsable_id).prenom} ${users.find(u => u.id === opportunity.responsable_id).nom}` : '—');
+  return h(Overlay, { onClose, className: 'w-[95vw] max-w-7xl h-[90vh] flex flex-col p-0 overflow-hidden' },
+    h('div', { className: 'px-6 py-4 border-b bg-white sticky top-0 z-10' },
+      h('div', { className: 'flex items-start justify-between' },
+        h('div', { className: 'flex-1' },
+          h('div', { onClick: stop }, h(InlineEditText, { value: opportunity.nom_opportunite, onSave: v => onFieldUpdate(opportunity.id, 'nom_opportunite', v), placeholder: "Nom de l'opportunité", large: true })),
+          h('div', { className: 'flex items-center gap-3 mt-3 flex-wrap' },
+            h('div', { onClick: stop }, h(InlineEditSelect, { value: opportunity.etape_funnel || 'Nouveau', options: etapeOptions, onSave: v => onFieldUpdate(opportunity.id, 'etape_funnel', v) })),
+            h('div', { onClick: stop }, h(InlineEditSelect, { value: opportunity.type || '__none__', options: [{ value: '__none__', label: 'Sans type', className: 'bg-gray-100 text-gray-600' }, ...typeOpportuniteOptions], onSave: v => onFieldUpdate(opportunity.id, 'type', v === '__none__' ? null : v) })),
+            opportunity.clients && h('span', { className: 'text-sm text-gray-600 ml-2' }, `• ${opportunity.clients.nom}`))),
+        h('div', { className: 'flex items-center gap-2' },
+          h(Button, { variant: 'destructive', size: 'sm', onClick: e => { e.stopPropagation(); onDelete(opportunity); }, className: 'flex items-center gap-2' }, h(I.Trash2, { className: 'h-4 w-4' }), 'Supprimer'),
+          h('button', { onClick: onClose, className: 'rounded-sm opacity-70 hover:opacity-100 p-1', title: 'Fermer' }, h(I.X, { className: 'h-4 w-4' }))))),
+    h('div', { className: 'flex-1 overflow-y-auto px-6 py-4' },
+      h(TabsList, { className: 'grid w-full grid-cols-5 mb-6 h-auto' },
+        tabBtn('overview', I.LayoutDashboard, "Vue d'ensemble"), tabBtn('entities', I.Link2, 'Entités liées'),
+        tabBtn('interactions', I.MessageSquare, 'Interactions', interactions.length > 0 && h(Badge, { variant: 'outline', className: 'ml-1 border-gray-200' }, interactions.length)),
+        tabBtn('timeline', I.Clock, 'Timeline'), tabBtn('documents', I.FileText, 'Documents')),
+      tab === 'overview' && h('div', { className: 'space-y-6' },
+        h('div', { className: 'grid grid-cols-1 md:grid-cols-3 gap-4' },
+          h(OpportunityMetricCard, { title: 'Valeur estimée', subtitle: 'Cliquez sur les valeurs pour les modifier', icon: I.DollarSign, color: 'green' },
+            h('div', { className: 'space-y-3' },
+              h('div', { onClick: stop }, h(InlineEditNumber, { value: Number(opportunity.valeur_estimee) || 0, onSave: v => onFieldUpdate(opportunity.id, 'valeur_estimee', v), formatDisplay: v => `$${v.toLocaleString()} CAD`, min: 0, step: 100 })),
+              h('div', { className: 'text-sm text-gray-600' }, 'Valeur pondérée: ', h('span', { className: 'font-semibold text-green-600' }, `$${weighted.toLocaleString()} CAD`)),
+              h('div', { className: 'space-y-2' }, h('div', { className: 'text-xs text-gray-500' }, 'Probabilité de conversion'), h('div', { onClick: stop }, h(InlineEditNumber, { value: opportunity.probabilite_conversion || 0, onSave: v => onFieldUpdate(opportunity.id, 'probabilite_conversion', v), suffix: '%', min: 0, max: 100, step: 5 }))),
+              h('div', { className: 'space-y-2' }, h('div', { className: 'text-xs text-gray-500' }, 'Profit estimé'), h('div', { onClick: stop }, h(InlineEditNumber, { value: opportunity.profit_estime || 0, onSave: v => onFieldUpdate(opportunity.id, 'profit_estime', v), suffix: '%', min: 0, max: 100, step: 1 }))),
+              h('div', { className: 'space-y-3 pt-3 border-t border-gray-200', onClick: stop },
+                h('div', { className: 'flex items-center gap-2 text-xs font-medium text-gray-700' }, h(I.Calendar, { className: 'h-3.5 w-3.5' }), 'Répartition du paiement'),
+                h('div', { className: 'space-y-1' }, h(Label, { className: 'text-xs text-gray-600' }, 'Nombre de mois (1-12)'), h(Select, { value: String(duree), onChange: v => { const d = parseInt(v); setDuree(d); let mm = montants; if (mode === 'manuel') { mm = Array(d).fill(0); montants.forEach((m, i) => { if (i < d) mm[i] = m; }); setMontants(mm); } saveRep(d, mode, mm); }, options: Array.from({ length: 12 }, (_, i) => ({ value: String(i + 1), label: `${i + 1} mois` })), className: 'h-8 text-sm w-full' })),
+                h('div', { className: 'space-y-1' }, h(Label, { className: 'text-xs text-gray-600' }, 'Mode de répartition'), h(Select, { value: mode, onChange: v => { setMode(v); let mm = montants; if (v === 'manuel' && montants.length === 0) { mm = Array(duree).fill(0); setMontants(mm); } saveRep(duree, v, mm); }, options: [{ value: 'auto', label: 'Automatique (équitable)' }, { value: 'manuel', label: 'Manuel (personnalisé)' }], className: 'h-8 text-sm w-full' })),
+                mode === 'manuel' && h('div', { className: 'space-y-2 p-3 bg-gray-50 rounded-md' }, h(Label, { className: 'text-xs font-medium text-gray-700' }, 'Montants mensuels (CAD)'),
+                  h('div', { className: 'grid grid-cols-2 gap-2' }, ...Array.from({ length: duree }).map((_, i) => h('div', { key: i, className: 'space-y-1' }, h(Label, { className: 'text-xs text-gray-600' }, `Mois ${i + 1}`), h(Input, { type: 'number', value: montants[i] || 0, onChange: e => { const mm = [...montants]; mm[i] = Number(e.target.value); setMontants(mm); }, onBlur: e => { const mm = [...montants]; mm[i] = Number(e.target.value); saveRep(duree, mode, mm); }, min: 0, step: 100, className: 'h-8 text-sm' })))),
+                  h('div', { className: 'flex justify-between text-xs pt-2 border-t border-gray-200' }, h('span', { className: 'font-medium text-gray-700' }, 'Total saisi:'), h('span', { className: 'font-mono font-semibold' }, `${montants.reduce((s, v) => s + v, 0).toLocaleString()} $ CAD`))),
+                mode === 'auto' && h('div', { className: 'text-xs text-gray-600 bg-blue-50 p-2 rounded' }, h('div', { className: 'flex items-center gap-1' }, h('span', null, '≈'), h('span', { className: 'font-mono font-semibold text-blue-700' }, `${Math.round(weighted / duree).toLocaleString()} $ CAD`), h('span', null, 'par mois (valeur pondérée)')))))),
+          h(OpportunityMetricCard, { title: 'Dates importantes', subtitle: 'Cliquez sur les dates pour les modifier', icon: I.Calendar, color: 'blue' },
+            h('div', { className: 'space-y-3' },
+              h('div', { onClick: stop }, h(InlineEditDate, { value: opportunity.date_ouverture, onSave: v => onFieldUpdate(opportunity.id, 'date_ouverture', v), label: 'Ouverture' })),
+              h('div', { onClick: stop }, h(InlineEditDate, { value: opportunity.date_cloture_estimee, onSave: v => onFieldUpdate(opportunity.id, 'date_cloture_estimee', v), label: 'Clôture estimée' })),
+              h('div', { className: 'flex items-center gap-2 px-2 py-1' }, h(I.Calendar, { className: 'h-3 w-3 text-gray-400' }), h('span', { className: 'text-sm text-gray-500' }, h('strong', null, 'Dernière MAJ:'), ' ', opportunity.date_mise_a_jour ? fmtDate(opportunity.date_mise_a_jour) : 'N/A')))),
+          h(OpportunityMetricCard, { title: 'Responsable & Source', subtitle: 'Cliquez pour assigner ou modifier', icon: I.User, color: 'purple' },
+            h('div', { className: 'space-y-3' },
+              h('div', { onClick: stop }, h('div', { className: 'text-xs text-gray-500 mb-1' }, 'Responsable'), h(InlineEditSelect, { value: opportunity.responsable_id || '__none__', options: respOptions, onSave: v => onFieldUpdate(opportunity.id, 'responsable_id', v === '__none__' ? null : v), displayValue: respDisplay })),
+              h('div', { onClick: stop }, h('div', { className: 'text-xs text-gray-500 mb-1' }, 'Source'), h(InlineEditSelect, { value: opportunity.source_opportunite || 'Autre', options: sourceOpportuniteOptions, onSave: v => onFieldUpdate(opportunity.id, 'source_opportunite', v) }))))),
+        h('div', { className: 'bg-white rounded-lg border border-gray-200 shadow-sm' },
+          h('div', { className: 'px-4 py-3 border-b bg-gray-50' }, h('h3', { className: 'text-sm font-semibold text-gray-700' }, "Description de l'opportunité"), h('p', { className: 'text-xs text-gray-500 mt-1' }, 'Cliquez pour modifier la description')),
+          h('div', { className: 'p-4', onClick: stop }, h(InlineEditTextarea, { value: opportunity.description, onSave: v => onFieldUpdate(opportunity.id, 'description', v), placeholder: "Ajouter une description détaillée de l'opportunité...", rows: 4 }))),
+        h(OpportunityHealthIndicator, { opportunity, lastInteractionDate: LAST_INTERACTIONS.get(opportunity.id) }),
+        opportunity.clients && h('div', { className: 'border-t pt-6' }, h('h3', { className: 'text-lg font-semibold text-gray-900 mb-4' }, 'Informations client'),
+          h('div', { className: 'bg-gray-50 rounded-lg p-4' },
+            h('div', { className: 'flex items-start gap-3 mb-4' }, h(I.MapPin, { className: 'h-5 w-5 text-gray-500 mt-0.5' }), h('div', null, h('h4', { className: 'font-medium text-gray-900' }, opportunity.clients.nom))),
+            h('div', { className: 'grid grid-cols-1 md:grid-cols-2 gap-3 text-sm text-gray-700' },
+              h('div', { className: 'flex items-center gap-2' }, h(I.Mail, { className: 'h-4 w-4 text-gray-400' }), opportunity.clients.email),
+              h('div', { className: 'flex items-center gap-2' }, h(I.Phone, { className: 'h-4 w-4 text-gray-400' }), opportunity.clients.telephone),
+              h('div', { className: 'flex items-center gap-2 md:col-span-2' }, h(I.MapPin, { className: 'h-4 w-4 text-gray-400' }), `${opportunity.clients.adresse}, ${opportunity.clients.ville} ${opportunity.clients.code_postal}, ${opportunity.clients.pays}`))))),
+      tab === 'entities' && h('div', { className: 'space-y-6' },
+        h('div', null, h('div', { className: 'flex items-center justify-between mb-4' }, h('h3', { className: 'text-lg font-semibold text-gray-900' }, 'Tâches liées'), h(Button, { size: 'sm', className: 'flex items-center gap-2' }, h(I.Plus, { className: 'h-4 w-4' }), 'Gérer les tâches')),
+          rel.taches?.length ? h('div', { className: 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4' }, ...rel.taches.map((t, i) => relCard(t.titre, [`Statut : ${t.statut}`, `Échéance : ${fmtDate(t.echeance)}`]))) : emptyBlock(I.CheckCircle2, 'Aucune tâche liée', 'Créer ou lier une tâche')),
+        h('div', null, h('div', { className: 'flex items-center justify-between mb-4' }, h('h3', { className: 'text-lg font-semibold text-gray-900' }, 'Objectifs liés'), h(Button, { size: 'sm', className: 'flex items-center gap-2' }, h(I.Plus, { className: 'h-4 w-4' }), 'Gérer les objectifs')), emptyBlock(I.Target, 'Aucun objectif lié', 'Créer ou lier un objectif')),
+        h('div', null, h('h3', { className: 'text-lg font-semibold text-gray-900 mb-4' }, 'Projets liés'), rel.projets?.length ? h('div', { className: 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4' }, ...rel.projets.map(p => relCard(p.nom, [`Statut : ${p.statut}`, `Budget : ${money(p.budget)}`]))) : emptyBlock(I.Package, 'Aucun projet lié')),
+        h('div', null, h('h3', { className: 'text-lg font-semibold text-gray-900 mb-4' }, 'Offres liées'), rel.offres?.length ? h('div', { className: 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4' }, ...rel.offres.map(o => relCard(`${o.numero} — ${o.titre}`, [`${money(o.montant)} · ${o.etape}`]))) : emptyBlock(I.FileText, 'Aucune offre liée')),
+        h('div', null, h('h3', { className: 'text-lg font-semibold text-gray-900 mb-4' }, 'Contrats liés'), rel.contrats?.length ? h('div', { className: 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4' }, ...rel.contrats.map(c => relCard(c.numero, [`Statut : ${c.statut}`]))) : emptyBlock(I.FileText, 'Aucun contrat lié')),
+        h('div', null, h('h3', { className: 'text-lg font-semibold text-gray-900 mb-4' }, 'Applications liées'), emptyBlock(I.Package, 'Aucune application liée'))),
+      tab === 'interactions' && h('div', { className: 'space-y-4' },
+        h('div', { className: 'flex items-center justify-between' }, h('h3', { className: 'text-lg font-semibold text-gray-900' }, 'Interactions client', interactions.length > 0 && h('span', { className: 'ml-2 text-gray-500 font-normal' }, `(${interactions.length})`)), h(Button, { size: 'sm', className: 'flex items-center gap-2' }, h(I.Plus, { className: 'h-4 w-4' }), 'Nouvelle interaction')),
+        interactions.length === 0 ? emptyBlock(I.MessageSquare, 'Aucune interaction enregistrée') : h('div', { className: 'space-y-3' }, ...interactions.map(it => h(Card, { key: it.id }, h(CardContent, { className: 'p-4' },
+          h('div', { className: 'flex items-center justify-between mb-1' }, h('div', { className: 'flex items-center gap-2' }, h(Badge, { variant: 'secondary' }, it.type), h('span', { className: 'font-medium text-gray-900' }, it.titre)), h('span', { className: 'text-xs text-gray-500' }, fmtDate(it.date_interaction))),
+          h('p', { className: 'text-sm text-gray-700' }, it.resume), h('p', { className: 'text-xs text-gray-500 mt-2' }, 'Participants : ', it.participants)))))),
+      tab === 'timeline' && h('div', null, h('h3', { className: 'text-lg font-semibold text-gray-900 mb-6' }, 'Historique complet'),
+        h('ol', { className: 'relative border-l border-gray-200 ml-3 space-y-6' }, ...[
+          ...interactions.map(it => ({ date: it.date_interaction, label: `${it.type} — ${it.titre}`, detail: it.resume })),
+          { date: opportunity.date_mise_a_jour, label: 'Dernière mise à jour', detail: 'Champs modifiés sur la fiche.' },
+          { date: opportunity.date_creation, label: 'Création de l’opportunité', detail: `Source : ${opportunity.source_opportunite}` },
+        ].filter(e => e.date).sort((a, b) => b.date.localeCompare(a.date)).map((e, i) => h('li', { key: i, className: 'ml-6' }, h('span', { className: 'absolute -left-1.5 w-3 h-3 rounded-full bg-blue-500 border-2 border-white' }), h('div', { className: 'text-xs text-gray-500' }, fmtDate(e.date)), h('div', { className: 'text-sm font-medium text-gray-900' }, e.label), h('div', { className: 'text-sm text-gray-600' }, e.detail))))),
+      tab === 'documents' && h('div', { className: 'text-center py-12' }, h(I.FileText, { className: 'h-16 w-16 text-gray-300 mx-auto mb-4' }), h('h3', { className: 'text-lg font-medium text-gray-900 mb-2' }, 'Documents et liens'), h('p', { className: 'text-gray-500' }, 'Fonctionnalité à venir'))));
+}
+
+// ============================================================
+// OpportunityForm (création / édition) — formulaire simplifié fidèle aux champs
+// ============================================================
+function OpportunityForm({ opportunity, onClose, onSubmit }) {
+  const [f, setF] = useState(opportunity || { nom_opportunite: '', description: '', client_id: 'c1', etape_funnel: 'Nouveau', responsable_id: '', valeur_estimee: 0, probabilite_conversion: 10, profit_estime: 30, source_opportunite: 'Site Web', date_cloture_estimee: '', type: 'vente' });
+  const set = (k, v) => setF(p => ({ ...p, [k]: v }));
+  const field = (label, el) => h('div', { className: 'space-y-2' }, h(Label, null, label), el);
+  return h(Overlay, { onClose, className: 'w-[95vw] max-w-2xl p-6' },
+    h('h2', { className: 'text-lg font-semibold mb-4' }, opportunity ? "Modifier l'opportunité" : 'Nouvelle opportunité'),
+    h('div', { className: 'grid grid-cols-1 md:grid-cols-2 gap-4' },
+      field("Nom de l'opportunité *", h(Input, { value: f.nom_opportunite, onChange: e => set('nom_opportunite', e.target.value) })),
+      field('Client', h(Select, { value: f.client_id || '', onChange: v => set('client_id', v), options: Object.values(CLIENTS).map(c => ({ value: c.id, label: c.nom })), className: 'w-full' })),
+      field('Étape du funnel', h(Select, { value: f.etape_funnel, onChange: v => set('etape_funnel', v), options: etapeOptions, className: 'w-full' })),
+      field('Responsable', h(Select, { value: f.responsable_id || '', onChange: v => set('responsable_id', v), options: [{ value: '', label: 'Non assigné' }, ...USERS.map(u => ({ value: u.id, label: `${u.prenom} ${u.nom}` }))], className: 'w-full' })),
+      field('Valeur estimée (CAD)', h(Input, { type: 'number', value: f.valeur_estimee, onChange: e => set('valeur_estimee', Number(e.target.value)) })),
+      field('Probabilité de conversion (%)', h(Input, { type: 'number', min: 0, max: 100, value: f.probabilite_conversion, onChange: e => set('probabilite_conversion', Number(e.target.value)) })),
+      field('Profit estimé (%)', h(Input, { type: 'number', min: 0, max: 100, value: f.profit_estime, onChange: e => set('profit_estime', Number(e.target.value)) })),
+      field('Source', h(Select, { value: f.source_opportunite, onChange: v => set('source_opportunite', v), options: sourceOpportuniteOptions, className: 'w-full' })),
+      field('Date de clôture estimée', h(Input, { type: 'date', value: f.date_cloture_estimee || '', onChange: e => set('date_cloture_estimee', e.target.value) })),
+      field('Type', h(Select, { value: f.type || 'vente', onChange: v => set('type', v), options: typeOpportuniteOptions, className: 'w-full' })),
+      h('div', { className: 'md:col-span-2 space-y-2' }, h(Label, null, 'Description'), h('textarea', { rows: 3, value: f.description || '', onChange: e => set('description', e.target.value), className: 'flex w-full rounded-md border border-gray-200 bg-white px-3 py-2 text-sm' }))),
+    h('div', { className: 'flex justify-end gap-2 mt-6' }, h(Button, { variant: 'outline', onClick: onClose }, 'Annuler'), h(Button, { onClick: () => { if (!f.nom_opportunite.trim()) return; onSubmit(f); }, disabled: !f.nom_opportunite.trim() }, opportunity ? 'Enregistrer' : 'Créer')));
+}
+
+// ============================================================
+// OpportunitiesView (page)
+// ============================================================
+function OpportunitiesView({ toast }) {
+  const [opps, setOpps] = useState(INITIAL_OPPS);
+  const [activeView, setActiveView] = useState('list');
+  const [detailId, setDetailId] = useState(null);
+  const [formOpen, setFormOpen] = useState(false); const [editId, setEditId] = useState(null);
+  const [toDelete, setToDelete] = useState(null);
+  const [projectPrefill, setProjectPrefill] = useState(null);
+  const { filters, filteredOpportunities, updateFilter, clearFilters, activeFiltersCount } = useOpportunityFilters(opps);
+  const { dormantOpportunities, warningCount, criticalCount } = useDormant(opps);
+  const handleFieldUpdate = (id, field, value) => { setOpps(l => l.map(o => o.id === id ? { ...o, [field]: value, date_mise_a_jour: iso(NOW), clients: field === 'client_id' ? (CLIENTS[value] || null) : o.clients } : o)); toast({ title: 'Modification enregistrée', description: 'La valeur a été mise à jour avec succès.' }); };
+  const handleEtapeClick = e => updateFilter('etapes', filters.etapes.includes(e) ? filters.etapes.filter(x => x !== e) : [e]);
+  const weighted = (v, p) => (v * p) / 100;
+  const totalValue = filteredOpportunities.reduce((s, o) => s + (Number(o.valeur_estimee) || 0), 0);
+  const totalWeighted = filteredOpportunities.reduce((s, o) => s + weighted(Number(o.valeur_estimee) || 0, o.probabilite_conversion || 0), 0);
+  const exportData = () => toast({ title: 'Export réussi', description: 'Les données ont été exportées en CSV' });
+  const confirmDelete = () => { setOpps(l => l.filter(o => o.id !== toDelete.id)); toast({ title: 'Opportunité supprimée', description: `L'opportunité "${toDelete.nom_opportunite}" a été supprimée avec succès.` }); setToDelete(null); setDetailId(null); };
+  const detail = opps.find(o => o.id === detailId);
+  const dashboard = () => h(React.Fragment, null, h(OpportunityKPIs, { opportunities: filteredOpportunities }), h(OpportunityRevenueTimeline, { opportunities: filteredOpportunities }),
+    h('div', { className: 'grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6' }, h('div', { className: 'xl:col-span-1' }, h(OpportunityFunnel, { opportunities: filteredOpportunities, onEtapeClick: handleEtapeClick })), h('div', { className: 'xl:col-span-1' }, h(OpportunityHeatmap, { opportunities: filteredOpportunities })), h('div', { className: 'xl:col-span-1' }, h(OpportunityRadar, { opportunities: filteredOpportunities }))));
+  return h('div', { className: 'p-6 space-y-6' },
+    h('div', { className: 'flex justify-between items-center' },
+      h('div', null, h('h1', { className: 'text-3xl font-bold text-gray-900' }, 'Pipeline Commercial'), h('p', { className: 'text-gray-600 mt-1' }, `Vision complète de vos opportunités • ${filteredOpportunities.length} sur ${opps.length} opportunités`)),
+      h('div', { className: 'flex gap-2' }, h(Button, { variant: 'outline', onClick: exportData, className: 'flex items-center gap-2' }, h(I.Download, { className: 'h-4 w-4' }), 'Exporter'), h(Button, { onClick: () => { setEditId(null); setFormOpen(true); }, className: 'flex items-center gap-2' }, h(I.Plus, { className: 'h-4 w-4' }), 'Nouvelle opportunité'))),
+    h('div', { className: 'w-full' }, h(TabsList, { className: 'grid w-full grid-cols-3 max-w-md' },
+      h(TabsTrigger, { active: activeView === 'list', onClick: () => setActiveView('list'), className: 'flex items-center gap-2' }, h(I.LayoutList, { className: 'h-4 w-4' }), 'Liste'),
+      h(TabsTrigger, { active: activeView === 'table', onClick: () => setActiveView('table'), className: 'flex items-center gap-2' }, h(I.Table2, { className: 'h-4 w-4' }), 'Table'),
+      h(TabsTrigger, { active: activeView === 'dashboard', onClick: () => setActiveView('dashboard'), className: 'flex items-center gap-2' }, h(I.BarChart3, { className: 'h-4 w-4' }), 'Dashboard'))),
+    activeView === 'list' ? h(OpportunitiesListView, { opportunities: filteredOpportunities, users: USERS, onFieldUpdate: handleFieldUpdate, onOpenDetail: setDetailId })
+    : activeView === 'dashboard' ? dashboard()
+    : h(React.Fragment, null,
+      h(OpportunityKPIs, { opportunities: filteredOpportunities }),
+      h(DormantOpportunitiesAlert, { dormantOpportunities, warningCount, criticalCount, onSelectOpportunity: setDetailId }),
+      h(OpportunityRevenueTimeline, { opportunities: filteredOpportunities }),
+      h('div', { className: 'grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6' }, h('div', { className: 'xl:col-span-1' }, h(OpportunityFunnel, { opportunities: filteredOpportunities, onEtapeClick: handleEtapeClick })), h('div', { className: 'xl:col-span-1' }, h(OpportunityHeatmap, { opportunities: filteredOpportunities })), h('div', { className: 'xl:col-span-1' }, h(OpportunityRadar, { opportunities: filteredOpportunities }))),
+      h(OpportunityFilters, { filters, onFilterChange: updateFilter, onClearFilters: clearFilters, activeFiltersCount }),
+      h('div', { className: 'flex justify-between items-center bg-blue-50 p-4 rounded-lg' },
+        h('div', { className: 'flex items-center gap-4 text-sm' }, h('span', { className: 'font-medium' }, `${filteredOpportunities.length} opportunité${filteredOpportunities.length > 1 ? 's' : ''} trouvée${filteredOpportunities.length > 1 ? 's' : ''}`), h('span', { className: 'text-gray-600' }, 'Valeur totale: ', h('span', { className: 'font-semibold' }, `$${totalValue.toLocaleString()} CAD`)), h('span', { className: 'text-gray-600' }, 'Valeur pondérée: ', h('span', { className: 'font-semibold' }, `$${totalWeighted.toLocaleString()} CAD`))),
+        activeFiltersCount > 0 && h(Badge, { variant: 'outline', className: 'bg-white border-gray-200' }, `${activeFiltersCount} filtre${activeFiltersCount > 1 ? 's' : ''} actif${activeFiltersCount > 1 ? 's' : ''}`)),
+      h('div', { className: 'bg-white rounded-lg shadow border space-y-4' },
+        h(Table, null, h(THead, null, h(TR, null, ...['Opportunité', 'Client', 'Étape', 'Responsable', 'Valeur estimée', 'Probabilité', 'Profit estimé', 'Valeur pondérée', 'Date création', 'Actions'].map(t => h(TH, { key: t }, t)))),
+          h(TBody, null, ...filteredOpportunities.map(o => { const dorm = dormantOpportunities.find(d => d.id === o.id); const stop = e => e.stopPropagation(); const uOpts = [{ value: '', label: 'Non assigné' }, ...USERS.map(u => ({ value: u.id, label: `${u.prenom} ${u.nom}` }))]; const u = USERS.find(x => x.id === o.responsable_id);
+            return h(TR, { key: o.id, onClick: () => setDetailId(o.id), className: `hover:bg-gray-50 cursor-pointer transition-all duration-200 ${dorm?.dormancyLevel === 'critical' ? 'bg-red-50/30' : dorm?.dormancyLevel === 'warning' ? 'bg-orange-50/30' : ''}` },
+              h(TD, null, h('div', null, h('div', { className: 'font-medium flex items-center gap-2' }, o.nom_opportunite, dorm && h('span', { title: `Dormante depuis ${dorm.daysSinceUpdate} jours` }, dorm.dormancyLevel === 'critical' ? h(I.AlertCircle, { className: 'h-3.5 w-3.5 text-red-500 shrink-0' }) : h(I.AlertTriangle, { className: 'h-3.5 w-3.5 text-orange-400 shrink-0' }))), o.description && h('div', { className: 'text-sm text-gray-500 max-w-xs truncate' }, o.description))),
+              h(TD, null, h('div', { className: 'font-medium' }, o.clients?.nom)),
+              h(TD, { onClick: stop }, h(InlineEditSelect, { value: o.etape_funnel, options: etapeOptions, onSave: v => handleFieldUpdate(o.id, 'etape_funnel', v) })),
+              h(TD, { onClick: stop }, h(InlineEditSelect, { value: o.responsable_id || '', options: uOpts, onSave: v => handleFieldUpdate(o.id, 'responsable_id', v || null), displayValue: u ? `${u.prenom} ${u.nom}` : 'Non assigné' })),
+              h(TD, { onClick: stop }, h(InlineEditNumber, { value: Number(o.valeur_estimee) || 0, onSave: v => handleFieldUpdate(o.id, 'valeur_estimee', v), formatDisplay: v => `$${v.toLocaleString()} CAD`, min: 0, step: 100 })),
+              h(TD, { onClick: stop }, h('div', { className: 'flex items-center space-x-2' }, h(InlineEditNumber, { value: o.probabilite_conversion || 0, onSave: v => handleFieldUpdate(o.id, 'probabilite_conversion', v), suffix: '%', min: 0, max: 100, step: 5 }), h('div', { className: 'w-16 bg-gray-200 rounded-full h-2' }, h('div', { className: 'bg-blue-600 h-2 rounded-full transition-all', style: { width: (o.probabilite_conversion || 0) + '%' } })))),
+              h(TD, { onClick: stop }, h(InlineEditNumber, { value: o.profit_estime || 0, onSave: v => handleFieldUpdate(o.id, 'profit_estime', v), suffix: '%', min: 0, max: 100, step: 1 })),
+              h(TD, { className: 'font-semibold text-green-600' }, `$${weighted(Number(o.valeur_estimee) || 0, o.probabilite_conversion || 0).toLocaleString()} CAD`),
+              h(TD, null, fmtDate(o.date_creation)),
+              h(TD, null, h('div', { className: 'flex items-center space-x-2' },
+                h(Button, { size: 'sm', variant: 'outline', className: 'h-8 w-8 p-0', onClick: e => { e.stopPropagation(); setEditId(o.id); setFormOpen(true); } }, h(I.Edit, { className: 'h-3 w-3' })),
+                h(Button, { size: 'sm', variant: 'outline', className: 'h-8 px-2 gap-1', onClick: e => { e.stopPropagation(); setProjectPrefill(o); } }, h(I.Rocket, { className: 'h-3 w-3' }), h('span', { className: 'text-xs' }, 'Projet')),
+                h(Button, { size: 'sm', variant: 'outline', className: 'h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50', onClick: e => { e.stopPropagation(); setToDelete(o); } }, h(I.Trash2, { className: 'h-3 w-3' }))))); }))),
+        filteredOpportunities.length === 0 && h('div', { className: 'text-center py-12' }, h(I.Eye, { className: 'h-12 w-12 text-gray-300 mx-auto mb-4' }), h('h3', { className: 'text-lg font-medium text-gray-900 mb-2' }, 'Aucune opportunité trouvée'), h('p', { className: 'text-gray-500 mb-4' }, 'Essayez de modifier vos critères de recherche ou créez une nouvelle opportunité.'), activeFiltersCount > 0 && h(Button, { variant: 'outline', onClick: clearFilters }, 'Effacer tous les filtres')))),
+    formOpen && h(OpportunityForm, { opportunity: editId ? opps.find(o => o.id === editId) : null, onClose: () => setFormOpen(false), onSubmit: f => { if (editId) { setOpps(l => l.map(o => o.id === editId ? { ...o, ...f, clients: CLIENTS[f.client_id] || null, date_mise_a_jour: iso(NOW) } : o)); toast({ title: 'Opportunité mise à jour' }); } else { setOpps(l => [mk('o' + Date.now(), { ...f, responsable_id: f.responsable_id || null, date_creation: iso(NOW), date_mise_a_jour: iso(NOW), date_cloture_estimee: f.date_cloture_estimee || null }), ...l]); toast({ title: 'Opportunité créée', description: `"${f.nom_opportunite}" a été ajoutée au pipeline.` }); } setFormOpen(false); } }),
+    projectPrefill && h(Overlay, { onClose: () => setProjectPrefill(null), className: 'w-[95vw] max-w-lg p-6' }, h('h2', { className: 'text-lg font-semibold mb-2' }, 'Nouveau projet'), h('p', { className: 'text-sm text-gray-600 mb-4' }, 'Formulaire de projet pré-rempli depuis l’opportunité.'), h('div', { className: 'space-y-3' }, h('div', { className: 'space-y-2' }, h(Label, null, 'Nom'), h(Input, { defaultValue: projectPrefill.nom_opportunite })), h('div', { className: 'space-y-2' }, h(Label, null, 'Client'), h(Input, { defaultValue: projectPrefill.clients?.nom || '', readOnly: true })), h('div', { className: 'space-y-2' }, h(Label, null, 'Description'), h('textarea', { rows: 3, defaultValue: projectPrefill.description || '', className: 'flex w-full rounded-md border border-gray-200 px-3 py-2 text-sm' }))), h('div', { className: 'flex justify-end gap-2 mt-6' }, h(Button, { variant: 'outline', onClick: () => setProjectPrefill(null) }, 'Annuler'), h(Button, { onClick: () => { toast({ title: 'Projet créé', description: `Projet "${projectPrefill.nom_opportunite}" créé (exemple).` }); setProjectPrefill(null); } }, 'Créer le projet'))),
+    detail && h(OpportunityDetailDialog, { opportunity: detail, users: USERS, onClose: () => setDetailId(null), onFieldUpdate: handleFieldUpdate, onDelete: setToDelete }),
+    toDelete && h(Overlay, { onClose: () => setToDelete(null), className: 'w-[95vw] max-w-lg p-6' },
+      h('h2', { className: 'text-lg font-semibold' }, 'Confirmer la suppression'),
+      h('p', { className: 'text-sm text-gray-500 mt-2' }, 'Êtes-vous sûr de vouloir supprimer l\'opportunité "', h('strong', null, toDelete.nom_opportunite), '" ?', h('br'), h('br'), 'Cette action est irréversible et supprimera définitivement toutes les données associées à cette opportunité.'),
+      h('div', { className: 'flex justify-end gap-2 mt-6' }, h(Button, { variant: 'outline', onClick: () => setToDelete(null) }, 'Annuler'), h(Button, { onClick: confirmDelete, className: 'bg-red-600 hover:bg-red-700 text-white' }, 'Supprimer définitivement'))));
+}
+
+// ============================================================
+// PAGE (SidebarProvider + AppSidebar + ResponsiveHeader + main)
 // ============================================================
 function App() {
-  const [opps, setOpps] = useState(INITIAL);
-  const [view, setView] = useState('pipeline');
-  const [q, setQ] = useState('');
-  const [fStage, setFStage] = useState('');
-  const [fHealth, setFHealth] = useState('');
-  const [fSource, setFSource] = useState('');
-  const [fOwner, setFOwner] = useState('');
-  const [showClosed, setShowClosed] = useState(false);
-  const [selectedId, setSelectedId] = useState(null);
+  const [collapsed, setCollapsed] = useState(false);
   const [toast, setToast] = useState(null);
-  const [showDormant, setShowDormant] = useState(true);
-
-  const notify = (msg) => { setToast(msg); setTimeout(() => setToast(null), 2600); };
-  const selected = opps.find(o => o.id === selectedId) || null;
-
-  const filtered = useMemo(() => opps.filter(o => {
-    if (q && !(o.nom + ' ' + o.entreprise + ' ' + o.contact).toLowerCase().includes(q.toLowerCase())) return false;
-    if (fStage && o.etape !== fStage) return false;
-    if (fHealth && healthLevel(healthScore(o)) !== fHealth) return false;
-    if (fSource && o.source !== fSource) return false;
-    if (fOwner && o.owner !== fOwner) return false;
-    if (view === 'liste' && !showClosed && isClosed(o) && !fStage) return false;
-    return true;
-  }), [opps, q, fStage, fHealth, fSource, fOwner, view, showClosed]);
-
-  // KPI
-  const active = opps.filter(o => !isClosed(o));
-  const pipeline = active.reduce((a, o) => a + o.valeur, 0);
-  const weighted = active.reduce((a, o) => a + o.valeur * o.probabilite / 100, 0);
-  const won = opps.filter(o => o.etape === 'gagnee'), lost = opps.filter(o => o.etape === 'perdue' || o.etape === 'archivee');
-  const convRate = won.length + lost.length ? Math.round(won.length / (won.length + lost.length) * 100) : 0;
-  const cycle = won.length ? Math.round(won.reduce((a, o) => a + daysSince(o.createdAt) - daysSince(o.cloture), 0) / won.length) : 0;
-  const dormant = active.filter(o => dormancy(o));
-
-  // Actions (mutations locales — données d'exemple)
-  const update = (id, fn) => setOpps(list => list.map(o => o.id === id ? fn(o) : o));
-  const addEvent = (o, texte) => ({ ...o, lastActivity: TODAY, timeline: [{ type: 'note', date: TODAY, texte }, ...o.timeline] });
-  const advance = () => update(selectedId, o => { const i = STAGES.findIndex(s => s.id === o.etape); const next = STAGES[i + 1].id; notify(`Avancée à « ${STAGE[next].label} »`); return addEvent({ ...o, etape: next, probabilite: Math.min(90, o.probabilite + 20) }, `Étape : ${STAGE[o.etape].label} → ${STAGE[next].label}`); });
-  const win = () => update(selectedId, o => { notify('Opportunité gagnée 🎉 — projet à créer'); return addEvent({ ...o, etape: 'gagnee', probabilite: 100, cloture: TODAY }, 'Marquée gagnée.'); });
-  const lose = (motif) => update(selectedId, o => { notify('Opportunité marquée perdue'); return addEvent({ ...o, etape: 'perdue', probabilite: 0, cloture: TODAY, motifPerte: motif }, `Marquée perdue — motif : ${motif}.`); });
-  const archive = () => update(selectedId, o => { notify('Opportunité archivée'); return addEvent({ ...o, etape: 'archivee' }, 'Archivée.'); });
-  const create = (kind) => update(selectedId, o => {
-    const n = { offre: () => ({ offres: [...o.offres, { numero: 'OFF-2026-0' + (50 + o.offres.length), titre: o.nom, montant: o.valeur, etape: 'Brouillon' }] }),
-                projet: () => ({ projets: [...o.projets, { nom: o.nom, statut: 'Planifié', budget: o.valeur }] }),
-                tache: () => ({ taches: [...o.taches, { titre: 'Faire le suivi — ' + o.entreprise, statut: 'À faire', echeance: inDays(3) }] }) }[kind]();
-    notify({ offre: 'Offre créée (brouillon)', projet: 'Projet créé', tache: 'Tâche créée' }[kind]);
-    return addEvent({ ...o, ...n }, { offre: 'Offre créée depuis l’opportunité.', projet: 'Projet créé depuis l’opportunité.', tache: 'Tâche de suivi créée.' }[kind]);
-  });
-
-  const resetFilters = () => { setQ(''); setFStage(''); setFHealth(''); setFSource(''); setFOwner(''); };
-  const hasFilters = q || fStage || fHealth || fSource || fOwner;
-
-  return h('div', { className: 'min-h-screen flex' },
-    // Barre latérale Orbit (contexte, non fonctionnelle)
-    h('nav', { className: 'hidden lg:flex w-56 shrink-0 bg-slate-900 text-slate-300 flex-col' },
-      h('div', { className: 'px-5 py-4 text-white font-bold text-lg tracking-tight flex items-center gap-2' }, h('span', { className: 'w-7 h-7 rounded-lg bg-indigo-500 inline-block' }), 'Orbit'),
-      h('div', { className: 'px-3 space-y-0.5 text-sm' },
-        ...[['Tableau de bord', Home], ['Entreprises', Building], ['Contacts', Users], ['Opportunités', Target, true], ['Offres', FileText], ['Contrats', Receipt], ['Projets', Briefcase], ['Tâches', CheckSquare]]
-          .map(([label, Icon, cur]) => h('a', { key: label, href: '#', onClick: e => e.preventDefault(), className: `flex items-center gap-2.5 px-3 py-2 rounded-md ${cur ? 'bg-slate-800 text-white' : 'hover:bg-slate-800/60'}` }, h(Icon, { size: 16 }), label))),
-      h('div', { className: 'mt-auto px-5 py-4 text-[11px] text-slate-500' }, 'Maquette — données d’exemple')),
-
-    h('main', { className: `flex-1 min-w-0 ${selected ? 'sm:pr-[440px]' : ''} transition-[padding]` },
-      // En-tête
-      h('header', { className: 'bg-white border-b border-slate-200 px-6 py-4 flex items-center justify-between gap-4 flex-wrap' },
-        h('div', null, h('h1', { className: 'text-2xl font-bold text-slate-900' }, 'Opportunités'),
-          h('p', { className: 'text-sm text-slate-500' }, `${active.length} actives · ${opps.length} au total`)),
-        h('div', { className: 'flex items-center gap-2' },
-          h(Btn, { icon: Download, onClick: () => notify('Export CSV lancé (exemple)') }, 'Export CSV'),
-          h(Btn, { variant: 'primary', icon: Plus, onClick: () => notify('Formulaire de création — à maquetter') }, 'Nouvelle opportunité'))),
-
-      h('div', { className: 'p-6 space-y-5' },
-        // KPI
-        h('div', { className: 'grid grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-3' },
-          h(KpiCard, { icon: Target, label: 'Actives', value: active.length, sub: `${dormant.length} dormante${dormant.length > 1 ? 's' : ''}`, tone: 'indigo' }),
-          h(KpiCard, { icon: DollarSign, label: 'Pipeline', value: fmtMoney(pipeline), sub: 'valeur brute', tone: 'sky' }),
-          h(KpiCard, { icon: TrendingUp, label: 'Pondérée', value: fmtMoney(weighted), sub: 'valeur × probabilité', tone: 'violet' }),
-          h(KpiCard, { icon: Check, label: 'Conversion', value: convRate + ' %', sub: `${won.length} gagnée${won.length > 1 ? 's' : ''} / ${lost.length} perdue${lost.length > 1 ? 's' : ''}`, tone: 'emerald' }),
-          h(KpiCard, { icon: Clock, label: 'Cycle moyen', value: cycle + ' j', sub: 'création → gagnée', tone: 'amber' })),
-
-        // Alerte dormantes
-        dormant.length > 0 && showDormant && h('div', { className: 'rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 flex items-start gap-3' },
-          h(AlertTriangle, { size: 18, className: 'text-amber-600 mt-0.5 shrink-0' }),
-          h('div', { className: 'flex-1 text-sm' },
-            h('span', { className: 'font-semibold text-amber-900' }, `${dormant.length} opportunité${dormant.length > 1 ? 's' : ''} sans activité depuis 14 jours ou plus. `),
-            h('span', { className: 'text-amber-800' }, 'Sans relance, elles finissent par se perdre en silence.'),
-            h('div', { className: 'mt-1.5 flex flex-wrap gap-1.5' }, ...dormant.map(o => h('button', { key: o.id, onClick: () => setSelectedId(o.id),
-              className: `text-xs px-2 py-0.5 rounded-full border ${dormancy(o) === 'critique' ? 'bg-rose-100 border-rose-200 text-rose-800' : 'bg-white border-amber-200 text-amber-900'} hover:ring-2 hover:ring-amber-300` },
-              `${o.entreprise} · ${daysSince(o.lastActivity)} j`)))),
-          h('button', { onClick: () => setShowDormant(false), className: 'text-amber-700 hover:text-amber-900' }, h(X, { size: 16 }))),
-
-        // Barre d'outils
-        h('div', { className: 'flex items-center gap-2 flex-wrap' },
-          h('div', { className: 'inline-flex rounded-md border border-slate-300 bg-white overflow-hidden' },
-            ...[['pipeline', 'Pipeline', LayoutGrid], ['liste', 'Liste', ListIcon]].map(([v, label, Icon]) => h('button', { key: v, onClick: () => setView(v),
-              className: `px-3 py-1.5 text-sm inline-flex items-center gap-1.5 ${view === v ? 'bg-indigo-600 text-white' : 'text-slate-700 hover:bg-slate-50'}` }, h(Icon, { size: 15 }), label))),
-          h('div', { className: 'relative' },
-            h(Search, { size: 15, className: 'absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400' }),
-            h('input', { value: q, onChange: e => setQ(e.target.value), placeholder: 'Rechercher une opportunité, une entreprise…', className: 'h-9 w-72 pl-8 pr-3 rounded-md border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500' })),
-          h(Select, { value: fStage, onChange: setFStage, placeholder: 'Toutes les étapes', options: STAGES.map(s => ({ value: s.id, label: s.label })) }),
-          h(Select, { value: fHealth, onChange: setFHealth, placeholder: 'Toute santé', options: Object.entries(HEALTH).map(([k, v]) => ({ value: k, label: v.label })) }),
-          h(Select, { value: fSource, onChange: setFSource, placeholder: 'Toutes les sources', options: SOURCES.map(s => ({ value: s, label: s })) }),
-          h(Select, { value: fOwner, onChange: setFOwner, placeholder: 'Tous les responsables', options: OWNERS.map(o => ({ value: o.id, label: o.name })) }),
-          hasFilters && h(Btn, { variant: 'ghost', icon: X, onClick: resetFilters }, 'Effacer'),
-          h('label', { className: 'ml-auto text-sm text-slate-600 inline-flex items-center gap-2 cursor-pointer select-none' },
-            h('input', { type: 'checkbox', checked: showClosed, onChange: e => setShowClosed(e.target.checked), className: 'rounded border-slate-300' }), 'Afficher gagnées / perdues / archivées')),
-
-        // Contenu
-        view === 'pipeline'
-          ? h(PipelineView, { opps: filtered, onOpen: setSelectedId, selectedId, showClosed: showClosed || !!fStage })
-          : h(ListView, { opps: filtered, onOpen: setSelectedId, selectedId }),
-
-        h('p', { className: 'text-xs text-slate-400' }, 'Maquette cliquable — les données sont fictives et les actions ne modifient que cet écran. Rechargez la page pour repartir de zéro.'))),
-
-    selected && h(Detail, { o: selected, onClose: () => setSelectedId(null), onAdvance: advance, onWin: win, onLose: lose, onArchive: archive, onCreate: create, onEdit: () => notify('Formulaire d’édition — à maquetter') }),
-    toast && h('div', { className: 'fixed bottom-5 left-1/2 -translate-x-1/2 bg-slate-900 text-white text-sm px-4 py-2 rounded-lg shadow-lg z-50 fadein' }, toast));
+  const notify = (t) => { setToast(t); setTimeout(() => setToast(null), 3000); };
+  return h('div', { className: 'min-h-screen flex w-full bg-gray-50 overflow-x-hidden' },
+    h(AppSidebar, { collapsed }),
+    h('div', { className: 'flex flex-col flex-1 min-w-0' },
+      h(ResponsiveHeader, { onToggle: () => setCollapsed(c => !c) }),
+      h('main', { className: 'flex-1 overflow-y-auto p-4 md:p-6 w-full' }, h('div', { className: 'max-w-full' }, h(OpportunitiesView, { toast: notify }))),
+      h('p', { className: 'px-6 pb-4 text-xs text-gray-400' }, 'Maquette — copie de l’écran actuel des opportunités d’Orbit, données fictives. Rechargez la page pour repartir de zéro.')),
+    h(Toast, { toast }));
 }
-
 ReactDOM.createRoot(document.getElementById('root')).render(h(App));
   </script>
 </body>
