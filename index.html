@@ -165,20 +165,25 @@ const CLIENTS = {
   c12: { id: 'c12', nom: 'Spa Les Cèdres', email: 'info@spalescedres.ca', adresse: '3200, ch. du Lac', ville: 'Magog', code_postal: 'J1X 3W4', pays: 'Canada', telephone: '819 555-0147' },
   c13: { id: 'c13', nom: 'Immobilier Deschênes', email: 'f.deschenes@immodeschenes.ca', adresse: '520, boul. René-Lévesque', ville: 'Québec', code_postal: 'G1R 2E3', pays: 'Canada', telephone: '418 555-0171' },
 };
-const mk = (id, o) => ({ id, profit_estime: 30, duree_reception_paiement_mois: 1, mode_repartition: 'auto', repartition_mensuelle: null, type: 'vente', date_ouverture: o.date_creation, ...o, clients: CLIENTS[o.client_id] || null });
+const mk = (id, o) => ({ id, profit_estime: 30, duree_reception_paiement_mois: 1, mode_repartition: 'auto', repartition_mensuelle: null, type: 'vente', date_ouverture: o.date_creation, motif_perte: null, etape_history: [], ...o, clients: CLIENTS[o.client_id] || null });
+const LOSS_REASONS = ['Prix trop élevé', 'Concurrent retenu', 'Projet abandonné', 'Sans réponse', 'Mauvais moment', 'Autre'];
+const ARCHIVE_AFTER_DAYS = 30;
+const CURRENT_USER = 'Maxime Leboeuf';
 const INITIAL_OPPS = [
-  mk('o01', { nom_opportunite: 'Refonte du portail client', description: 'Portail de suivi des chantiers pour les clients résidentiels. Offre envoyée, en discussion sur la phase 2.', client_id: 'c1', etape_funnel: 'Négociation', responsable_id: 'u1', valeur_estimee: 48000, probabilite_conversion: 75, profit_estime: 35, source_opportunite: 'Référence client', date_creation: ago(41), date_mise_a_jour: ago(2), date_cloture_estimee: ahead(12), duree_reception_paiement_mois: 3 }),
+  mk('o01', { nom_opportunite: 'Refonte du portail client', description: 'Portail de suivi des chantiers pour les clients résidentiels. Offre envoyée, en discussion sur la phase 2.', client_id: 'c1', etape_funnel: 'Négociation', responsable_id: 'u1', valeur_estimee: 48000, probabilite_conversion: 75, profit_estime: 35, source_opportunite: 'Référence client', date_creation: ago(41), date_mise_a_jour: ago(2), date_cloture_estimee: ahead(12), duree_reception_paiement_mois: 3,
+    etape_history: [{ date: ago(35), from: 'Nouveau', to: 'Qualification', par: 'Maxime Leboeuf' }, { date: ago(14), from: 'Qualification', to: 'Proposition', par: 'Maxime Leboeuf' }, { date: ago(6), from: 'Proposition', to: 'Négociation', par: 'Maxime Leboeuf' }] }),
   mk('o02', { nom_opportunite: 'Module facturation cloud', description: 'Automatiser la facturation de leurs services cloud. Proposition remise, attente du comité de direction.', client_id: 'c2', etape_funnel: 'Proposition', responsable_id: 'u2', valeur_estimee: 32000, probabilite_conversion: 50, profit_estime: 28, source_opportunite: 'Site Web', date_creation: ago(28), date_mise_a_jour: ago(5), date_cloture_estimee: ahead(20), duree_reception_paiement_mois: 2 }),
   mk('o03', { nom_opportunite: 'Assistant conversationnel RH', description: 'Chatbot interne pour répondre aux questions des employés sur les politiques RH.', client_id: 'c3', etape_funnel: 'Qualification', responsable_id: 'u3', valeur_estimee: 21000, probabilite_conversion: 35, profit_estime: 40, source_opportunite: 'Réseautage', date_creation: ago(12), date_mise_a_jour: ago(1), date_cloture_estimee: ahead(35), type: 'innovation' }),
   mk('o04', { nom_opportunite: 'Migration ERP vers Orbit', description: 'Remplacement de leur ERP maison. Négociation sur le calendrier de migration des données.', client_id: 'c4', etape_funnel: 'Négociation', responsable_id: 'u1', valeur_estimee: 65000, probabilite_conversion: 60, profit_estime: 32, source_opportunite: 'Référence client', date_creation: ago(63), date_mise_a_jour: ago(17), date_cloture_estimee: ahead(8), duree_reception_paiement_mois: 6, mode_repartition: 'manuel', repartition_mensuelle: [20000, 15000, 10000, 10000, 5000, 5000] }),
   mk('o05', { nom_opportunite: 'Tableau de bord KPI production', description: 'Demande reçue ce matin : suivi en temps réel des rejets machine.', client_id: 'c5', etape_funnel: 'Nouveau', responsable_id: 'u2', valeur_estimee: 12000, probabilite_conversion: 15, profit_estime: 25, source_opportunite: 'Site Web', date_creation: ago(0), date_mise_a_jour: ago(0), date_cloture_estimee: ahead(45) }),
-  mk('o06', { nom_opportunite: 'Site transactionnel', description: 'Commandes en ligne pour les deux succursales. Sans nouvelle depuis un mois.', client_id: 'c6', etape_funnel: 'Qualification', responsable_id: 'u3', valeur_estimee: 9500, probabilite_conversion: 30, profit_estime: 20, source_opportunite: 'Référencement', date_creation: ago(50), date_mise_a_jour: ago(33), date_cloture_estimee: ahead(5) }),
+  mk('o06', { nom_opportunite: 'Site transactionnel', description: 'Commandes en ligne pour les deux succursales. Sans nouvelle depuis un mois.', client_id: 'c6', etape_funnel: 'Qualification', responsable_id: 'u3', valeur_estimee: 9500, probabilite_conversion: 30, profit_estime: 20, source_opportunite: 'Référencement', date_creation: ago(50), date_mise_a_jour: ago(33), date_cloture_estimee: ago(4) }),
   mk('o07', { nom_opportunite: 'Audit Loi 25', description: 'Audit de conformité et plan de remédiation. Proposition remise.', client_id: 'c7', etape_funnel: 'Proposition', responsable_id: 'u1', valeur_estimee: 8500, probabilite_conversion: 55, profit_estime: 45, source_opportunite: 'Réseautage', date_creation: ago(19), date_mise_a_jour: ago(3), date_cloture_estimee: ahead(10), type: 'strategique' }),
   mk('o08', { nom_opportunite: 'Application mobile terrain', description: 'Feuilles de temps et photos de chantier depuis le téléphone.', client_id: 'c8', etape_funnel: 'Nouveau', responsable_id: null, valeur_estimee: 27000, probabilite_conversion: 20, profit_estime: 30, source_opportunite: 'Autre', date_creation: ago(15), date_mise_a_jour: ago(15), date_cloture_estimee: null }),
   mk('o09', { nom_opportunite: 'Intégration Stripe', description: 'Paiement récurrent pour leurs abonnements photo.', client_id: 'c9', etape_funnel: 'Proposition', responsable_id: 'u2', valeur_estimee: 6000, probabilite_conversion: 65, profit_estime: 50, source_opportunite: 'Site Web', date_creation: ago(11), date_mise_a_jour: ago(4), date_cloture_estimee: ahead(7) }),
   mk('o10', { nom_opportunite: 'Portail fournisseurs', description: 'Portail pour 80 fournisseurs : bons de commande, factures, statuts.', client_id: 'c10', etape_funnel: 'Qualification', responsable_id: 'u1', valeur_estimee: 38000, probabilite_conversion: 40, profit_estime: 30, source_opportunite: 'Référence client', date_creation: ago(21), date_mise_a_jour: ago(6), date_cloture_estimee: ahead(40), duree_reception_paiement_mois: 4 }),
   mk('o11', { nom_opportunite: 'Refonte intranet', description: 'Gagnée le 31 août. Projet démarré.', client_id: 'c11', etape_funnel: 'Gagnée', responsable_id: 'u2', valeur_estimee: 19000, probabilite_conversion: 100, profit_estime: 35, source_opportunite: 'Réseautage', date_creation: ago(70), date_mise_a_jour: ago(9), date_cloture_estimee: ago(9) }),
-  mk('o12', { nom_opportunite: 'Système de réservation', description: 'Perdue : ont choisi une solution SaaS clé en main.', client_id: 'c12', etape_funnel: 'Perdue', responsable_id: 'u3', valeur_estimee: 14000, probabilite_conversion: 0, profit_estime: 30, source_opportunite: 'Référencement', date_creation: ago(55), date_mise_a_jour: ago(12), date_cloture_estimee: ago(12) }),
+  mk('o12', { nom_opportunite: 'Système de réservation', description: 'Perdue : ont choisi une solution SaaS clé en main.', client_id: 'c12', etape_funnel: 'Perdue', responsable_id: 'u3', valeur_estimee: 14000, probabilite_conversion: 0, profit_estime: 30, source_opportunite: 'Référencement', date_creation: ago(55), date_mise_a_jour: ago(35), date_cloture_estimee: ago(35), motif_perte: 'Concurrent retenu',
+    etape_history: [{ date: ago(50), from: 'Nouveau', to: 'Qualification', par: 'Simon Gagnon' }, { date: ago(44), from: 'Qualification', to: 'Proposition', par: 'Simon Gagnon' }, { date: ago(35), from: 'Proposition', to: 'Perdue', par: 'Simon Gagnon', motif: 'Concurrent retenu' }] }),
   mk('o13', { nom_opportunite: 'CRM sur mesure', description: 'Projet mis sur la glace en juillet, archivé.', client_id: 'c13', etape_funnel: 'Archivée', responsable_id: 'u1', valeur_estimee: 22000, probabilite_conversion: 0, profit_estime: 30, source_opportunite: 'Autre', date_creation: ago(120), date_mise_a_jour: ago(48), date_cloture_estimee: ago(48) }),
 ];
 // Interactions (pour la santé et l'onglet Interactions)
@@ -194,7 +199,7 @@ const INTERACTIONS = [
   { id: 'i9', opportunite_id: 'o09', type: 'Courriel', date_interaction: ago(4), titre: 'Retour attendu', resume: 'Sophie revient d’ici vendredi.', participants: 'Sophie Caron' },
   { id: 'i10', opportunite_id: 'o10', type: 'Rencontre', date_interaction: ago(6), titre: 'Atelier achats', resume: 'Atelier avec l’équipe des achats : 80 fournisseurs, intégration comptable à chiffrer.', participants: 'Patrick Roy' },
   { id: 'i11', opportunite_id: 'o11', type: 'Rencontre', date_interaction: ago(9), titre: 'Signature du contrat', resume: 'Contrat signé, projet créé.', participants: 'Hélène Dubois' },
-  { id: 'i12', opportunite_id: 'o12', type: 'Appel', date_interaction: ago(12), titre: 'Décision', resume: 'Marie-Ève nous informe de leur choix pour une solution SaaS.', participants: 'Marie-Ève Simard' },
+  { id: 'i12', opportunite_id: 'o12', type: 'Appel', date_interaction: ago(35), titre: 'Décision', resume: 'Marie-Ève nous informe de leur choix pour une solution SaaS.', participants: 'Marie-Ève Simard' },
 ];
 const RELATED = {
   o01: { taches: [{ titre: 'Relancer sur la phase 2', statut: 'À faire', echeance: ahead(1) }], offres: [{ numero: 'OFF-2026-041', titre: 'Portail client — phase 1', montant: 48000, etape: 'Envoyée' }] },
@@ -401,18 +406,20 @@ function OpportunityKPIs({ opportunities }) {
   const conv = opportunities.length ? (won.length / opportunities.length) * 100 : 0;
   const active = opportunities.filter(o => !['gagnee', 'perdue', 'archivee'].includes(norm(o.etape_funnel)));
   const avgCycle = active.length ? active.reduce((s, o) => s + daysBetween(NOW, new Date(o.date_creation)), 0) / active.length : 0;
+  // AMÉLIORATION (petit) : indicateurs honnêtes — les tendances fixes « +12 % ce mois » sont remplacées par un sous-titre calculé.
+  const lost = opportunities.filter(isLost);
   const kpis = [
-    { title: 'Pipeline Total', value: `${totalValue.toLocaleString()} CAD`, change: '+12%', trend: 'up', icon: I.DollarSign, color: 'text-blue-600 bg-blue-50' },
-    { title: 'Opportunités Gagnées', value: `${wonValue.toLocaleString()} CAD`, change: '+3%', trend: 'up', icon: I.Award, color: 'text-emerald-600 bg-emerald-50' },
-    { title: 'Profit estimé pondéré', value: `${Math.round(totalWeightedProfit).toLocaleString()} CAD`, change: '+4%', trend: 'up', icon: I.DollarSign, color: 'text-amber-600 bg-amber-50' },
-    { title: 'Valeur Pondérée', value: `${totalWeighted.toLocaleString()} CAD`, change: '+8%', trend: 'up', icon: I.Target, color: 'text-green-600 bg-green-50' },
-    { title: 'Taux de Conversion', value: `${conv.toFixed(1)}%`, change: '-2%', trend: 'down', icon: I.Award, color: 'text-purple-600 bg-purple-50' },
-    { title: 'Cycle Moyen', value: `${Math.round(avgCycle)} jours`, change: '+5j', trend: 'down', icon: I.Clock, color: 'text-orange-600 bg-orange-50' },
+    { title: 'Pipeline Total', value: `${totalValue.toLocaleString()} CAD`, sub: `${pipeline.length} opportunité${pipeline.length > 1 ? 's' : ''} en cours`, icon: I.DollarSign, color: 'text-blue-600 bg-blue-50' },
+    { title: 'Opportunités Gagnées', value: `${wonValue.toLocaleString()} CAD`, sub: `${won.length} gagnée${won.length > 1 ? 's' : ''}`, icon: I.Award, color: 'text-emerald-600 bg-emerald-50' },
+    { title: 'Profit estimé pondéré', value: `${Math.round(totalWeightedProfit).toLocaleString()} CAD`, sub: `valeur × probabilité × profit`, icon: I.DollarSign, color: 'text-amber-600 bg-amber-50' },
+    { title: 'Valeur Pondérée', value: `${totalWeighted.toLocaleString()} CAD`, sub: totalValue ? `${Math.round(totalWeighted / totalValue * 100)} % du pipeline` : '—', icon: I.Target, color: 'text-green-600 bg-green-50' },
+    { title: 'Taux de Conversion', value: `${conv.toFixed(1)}%`, sub: `${won.length} gagnée${won.length > 1 ? 's' : ''} / ${lost.length} perdue${lost.length > 1 ? 's' : ''}`, icon: I.Award, color: 'text-purple-600 bg-purple-50' },
+    { title: 'Cycle Moyen', value: `${Math.round(avgCycle)} jours`, sub: `sur ${active.length} active${active.length > 1 ? 's' : ''}`, icon: I.Clock, color: 'text-orange-600 bg-orange-50' },
   ];
   return h('div', { className: 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4' }, ...kpis.map((k, i) => h(Card, { key: i, className: 'hover:shadow-lg transition-shadow' }, h(CardContent, { className: 'p-4' },
     h('div', { className: 'flex items-center justify-between' },
       h('div', null, h('p', { className: 'text-sm text-gray-600 mb-1' }, k.title), h('p', { className: 'text-2xl font-bold' }, k.value),
-        h('div', { className: 'flex items-center mt-2 text-sm' }, k.trend === 'up' ? h(I.TrendingUp, { className: 'h-4 w-4 text-green-500 mr-1' }) : h(I.TrendingDown, { className: 'h-4 w-4 text-red-500 mr-1' }), h('span', { className: k.trend === 'up' ? 'text-green-600' : 'text-red-600' }, k.change), h('span', { className: 'text-gray-500 ml-1' }, 'ce mois'))),
+        h('div', { className: 'flex items-center mt-2 text-sm text-gray-500' }, k.sub)),
       h('div', { className: `p-3 rounded-lg ${k.color}` }, h(k.icon, { className: 'h-6 w-6' })))))));
 }
 
@@ -582,20 +589,25 @@ function OpportunitiesListView({ opportunities, users, onFieldUpdate, onOpenDeta
       h('span', { className: 'text-gray-300' }, '|'),
       h('span', { className: 'text-xs text-gray-400' }, 'Tri: Sante ASC / Chaleur DESC / Date cloture ASC')),
     h('div', { className: 'bg-white rounded-lg shadow border' },
-      h(Table, null, h(THead, null, h(TR, null, h(TH, { className: 'w-20' }, 'Sante'), h(TH, null, 'Opportunite'), h(TH, null, 'Client'), h(TH, null, 'Etape'), h(TH, null, 'Responsable'), h(TH, null, 'Valeur'), h(TH, null, 'Chaleur'), h(TH, null, 'Date cloture'), h(TH, { className: 'w-16' }, 'Entites'))),
+      h(Table, null, h(THead, null, h(TR, null, h(TH, { className: 'w-20' }, 'Sante'), h(TH, null, 'Opportunite'), h(TH, null, 'Client'), h(TH, null, 'Etape'), h(TH, null, 'Responsable'), h(TH, null, 'Valeur'), h(TH, null, 'Chaleur'), h(TH, null, 'Derniere activite'), h(TH, null, 'Date cloture'), h(TH, { className: 'w-24' }, 'Entites'))),
         h(TBody, null, ...processed.map(({ opp, health }) => {
           const p = opp.probabilite_conversion ?? 0; const resp = users.find(u => u.id === opp.responsable_id); const respDisplay = resp ? `${resp.prenom} ${resp.nom}` : 'Non assigne';
           const stop = e => e.stopPropagation();
           return h(TR, { key: opp.id, className: 'hover:bg-gray-50 cursor-pointer transition-colors', onClick: () => onOpenDetail(opp.id) },
-            h(TD, null, h('div', { className: 'flex items-center gap-2' }, h('span', { className: `inline-block w-2 h-2 rounded-full ${health.dotColor}` }), h('span', { className: `text-xs font-medium ${health.color}` }, health.label))),
+            // AMÉLIORATION (petit) : santé expliquée au survol
+            h(TD, null, h('div', { className: 'flex items-center gap-2 cursor-help', title: `Santé ${health.score}/100\n${health.recommendations.map(r => '• ' + r).join('\n')}` }, h('span', { className: `inline-block w-2 h-2 rounded-full ${health.dotColor}` }), h('span', { className: `text-xs font-medium ${health.color} border-b border-dotted border-current` }, health.label))),
             h(TD, { onClick: stop }, h(InlineEditText, { value: opp.nom_opportunite || '', onSave: v => onFieldUpdate(opp.id, 'nom_opportunite', v) })),
             h(TD, null, h('span', { className: 'text-sm text-gray-700' }, opp.clients?.nom || '—')),
             h(TD, { onClick: stop }, h(InlineEditSelect, { value: opp.etape_funnel, options: etapeOptions, onSave: v => onFieldUpdate(opp.id, 'etape_funnel', v) })),
             h(TD, { onClick: stop }, h('div', { className: 'flex items-center gap-2' }, resp && h('span', { className: `inline-flex items-center justify-center w-6 h-6 rounded-full text-white text-[10px] font-semibold ${getAvatarColor(respDisplay)}` }, getInitials(resp.prenom, resp.nom)), h(InlineEditSelect, { value: opp.responsable_id || '', options: userOptions, onSave: v => onFieldUpdate(opp.id, 'responsable_id', v || null), displayValue: respDisplay }))),
             h(TD, { onClick: stop }, h(InlineEditNumber, { value: Number(opp.valeur_estimee) || 0, onSave: v => onFieldUpdate(opp.id, 'valeur_estimee', v), formatDisplay: v => `$${v.toLocaleString()} CAD`, min: 0, step: 100 })),
             h(TD, { onClick: stop }, h('div', { className: 'flex items-center gap-2' }, h(InlineEditNumber, { value: p, onSave: v => onFieldUpdate(opp.id, 'probabilite_conversion', v), suffix: '%', min: 0, max: 100, step: 5 }), h('div', { className: 'w-[50px] h-[5px] bg-gray-200 rounded-full overflow-hidden' }, h('div', { className: `h-full rounded-full transition-all ${getChaleurBarColor(p)}`, style: { width: p + '%' } })))),
-            h(TD, { onClick: stop }, h(InlineEditDate, { value: opp.date_cloture_estimee || null, onSave: v => onFieldUpdate(opp.id, 'date_cloture_estimee', v) })),
-            h(TD, null, h('span', { className: 'text-sm text-gray-400' }, '—')));
+            // AMÉLIORATION (petit) : dernière activité visible
+            h(TD, null, (() => { const li = LAST_INTERACTIONS.get(opp.id); if (!li) return h('span', { className: 'text-xs text-gray-400' }, 'Aucune'); const d = daysBetween(NOW, new Date(li + 'T12:00:00')); return h('span', { className: `text-xs ${d > 30 ? 'text-red-600 font-medium' : d > 14 ? 'text-orange-600' : 'text-gray-600'}` }, d === 0 ? "aujourd'hui" : `il y a ${d} j`); })()),
+            // AMÉLIORATION (petit) : date de clôture dépassée mise en évidence
+            h(TD, { onClick: stop }, (() => { const over = opp.date_cloture_estimee && !CLOSED_STAGES.has(opp.etape_funnel) && daysBetween(NOW, new Date(opp.date_cloture_estimee + 'T12:00:00')) > 0; return h('div', { className: 'flex items-center gap-2' }, h('div', { className: over ? 'text-red-700' : '' }, h(InlineEditDate, { value: opp.date_cloture_estimee || null, onSave: v => onFieldUpdate(opp.id, 'date_cloture_estimee', v) })), over && h(Badge, { variant: 'outline', className: 'border-red-300 text-red-700 bg-red-50 text-[10px] whitespace-nowrap' }, `dépassée de ${daysBetween(NOW, new Date(opp.date_cloture_estimee + 'T12:00:00'))} j`)); })()),
+            // AMÉLIORATION (petit) : colonne Entités réelle
+            h(TD, null, (() => { const r = RELATED[opp.id] || {}; const parts = [[r.offres?.length, 'offre'], [r.projets?.length, 'projet'], [r.taches?.length, 'tâche'], [r.contrats?.length, 'contrat']].filter(([n]) => n); return parts.length === 0 ? h('span', { className: 'text-sm text-gray-400' }, '—') : h('div', { className: 'flex flex-wrap gap-1' }, ...parts.map(([n, l]) => h(Badge, { key: l, variant: 'secondary', className: 'text-[10px] px-1.5' }, `${n} ${l}${n > 1 ? 's' : ''}`))); })()));
         }))),
       processed.length === 0 && h('div', { className: 'text-center py-12' }, h(I.Eye, { className: 'h-12 w-12 text-gray-300 mx-auto mb-4' }), h('h3', { className: 'text-lg font-medium text-gray-900 mb-2' }, 'Aucune opportunite ne correspond aux filtres'), h('p', { className: 'text-gray-500' }, 'Essayez de modifier vos criteres de filtrage.'))),
     h('div', { className: 'flex items-center justify-between text-sm text-gray-600 px-1' }, h('span', null, `${processed.length} opportunite${processed.length > 1 ? 's' : ''}`), h('span', null, 'Valeur totale : ', h('span', { className: 'font-semibold' }, `$${totalValue.toLocaleString()} CAD`))));
@@ -644,7 +656,9 @@ function OpportunityDetailDialog({ opportunity, users, onClose, onFieldUpdate, o
           h('div', { className: 'flex items-center gap-3 mt-3 flex-wrap' },
             h('div', { onClick: stop }, h(InlineEditSelect, { value: opportunity.etape_funnel || 'Nouveau', options: etapeOptions, onSave: v => onFieldUpdate(opportunity.id, 'etape_funnel', v) })),
             h('div', { onClick: stop }, h(InlineEditSelect, { value: opportunity.type || '__none__', options: [{ value: '__none__', label: 'Sans type', className: 'bg-gray-100 text-gray-600' }, ...typeOpportuniteOptions], onSave: v => onFieldUpdate(opportunity.id, 'type', v === '__none__' ? null : v) })),
-            opportunity.clients && h('span', { className: 'text-sm text-gray-600 ml-2' }, `• ${opportunity.clients.nom}`))),
+            opportunity.clients && h('span', { className: 'text-sm text-gray-600 ml-2' }, `• ${opportunity.clients.nom}`),
+            opportunity.etape_funnel === 'Perdue' && opportunity.motif_perte && h(Badge, { variant: 'outline', className: 'border-red-300 text-red-700 bg-red-50' }, `Motif : ${opportunity.motif_perte}`)),
+          (opportunity.etape_funnel === 'Gagnée' || opportunity.etape_funnel === 'Perdue') && daysBetween(NOW, new Date((opportunity.date_mise_a_jour || opportunity.date_creation) + 'T12:00:00')) >= ARCHIVE_AFTER_DAYS && h('div', { className: 'mt-3 flex items-center gap-3 text-sm text-gray-700 bg-gray-50 border border-gray-200 rounded-md px-3 py-2' }, h(I.Clock, { className: 'h-4 w-4 text-gray-500' }), `Conclue depuis plus de ${ARCHIVE_AFTER_DAYS} jours — archivage proposé.`, h(Button, { size: 'sm', variant: 'outline', className: 'h-7 px-2 text-xs ml-auto', onClick: () => onFieldUpdate(opportunity.id, 'etape_funnel', 'Archivée') }, 'Archiver'))),
         h('div', { className: 'flex items-center gap-2' },
           h(Button, { variant: 'destructive', size: 'sm', onClick: e => { e.stopPropagation(); onDelete(opportunity); }, className: 'flex items-center gap-2' }, h(I.Trash2, { className: 'h-4 w-4' }), 'Supprimer'),
           h('button', { onClick: onClose, className: 'rounded-sm opacity-70 hover:opacity-100 p-1', title: 'Fermer' }, h(I.X, { className: 'h-4 w-4' }))))),
@@ -705,6 +719,8 @@ function OpportunityDetailDialog({ opportunity, users, onClose, onFieldUpdate, o
       tab === 'timeline' && h('div', null, h('h3', { className: 'text-lg font-semibold text-gray-900 mb-6' }, 'Historique complet'),
         h('ol', { className: 'relative border-l border-gray-200 ml-3 space-y-6' }, ...[
           ...interactions.map(it => ({ date: it.date_interaction, label: `${it.type} — ${it.titre}`, detail: it.resume })),
+          // AMÉLIORATION (petit) : historique des changements d'étape (qui, quand)
+          ...(opportunity.etape_history || []).map(e => ({ date: e.date, label: `Étape : ${e.from} → ${e.to}`, detail: `par ${e.par}${e.motif ? ' — motif : ' + e.motif : ''}${e.note ? ' — note : ' + e.note : ''}` })),
           { date: opportunity.date_mise_a_jour, label: 'Dernière mise à jour', detail: 'Champs modifiés sur la fiche.' },
           { date: opportunity.date_creation, label: 'Création de l’opportunité', detail: `Source : ${opportunity.source_opportunite}` },
         ].filter(e => e.date).sort((a, b) => b.date.localeCompare(a.date)).map((e, i) => h('li', { key: i, className: 'ml-6' }, h('span', { className: 'absolute -left-1.5 w-3 h-3 rounded-full bg-blue-500 border-2 border-white' }), h('div', { className: 'text-xs text-gray-500' }, fmtDate(e.date)), h('div', { className: 'text-sm font-medium text-gray-900' }, e.label), h('div', { className: 'text-sm text-gray-600' }, e.detail))))),
@@ -747,12 +763,41 @@ function OpportunitiesView({ toast }) {
   const [projectPrefill, setProjectPrefill] = useState(null);
   const { filters, filteredOpportunities, updateFilter, clearFilters, activeFiltersCount } = useOpportunityFilters(opps);
   const { dormantOpportunities, warningCount, criticalCount } = useDormant(opps);
-  const handleFieldUpdate = (id, field, value) => { setOpps(l => l.map(o => o.id === id ? { ...o, [field]: value, date_mise_a_jour: iso(NOW), clients: field === 'client_id' ? (CLIENTS[value] || null) : o.clients } : o)); toast({ title: 'Modification enregistrée', description: 'La valeur a été mise à jour avec succès.' }); };
+  // AMÉLIORATIONS (petit) : motif obligatoire pour Perdue, note obligatoire pour reculer d'étape, historique des changements d'étape
+  const [stageDialog, setStageDialog] = useState(null);
+  const applyStage = (id, to, extra = {}) => { setOpps(l => l.map(o => o.id === id ? { ...o, etape_funnel: to, date_mise_a_jour: iso(NOW), ...(extra.motif ? { motif_perte: extra.motif } : {}), etape_history: [...(o.etape_history || []), { date: iso(NOW), from: o.etape_funnel, to, par: CURRENT_USER, ...extra }] } : o)); toast({ title: 'Modification enregistrée', description: `Étape : ${to}.` }); };
+  const handleFieldUpdate = (id, field, value) => {
+    if (field === 'etape_funnel') {
+      const o = opps.find(x => x.id === id); if (!o || o.etape_funnel === value) return;
+      if (value === 'Perdue') return setStageDialog({ id, from: o.etape_funnel, to: value, kind: 'perdue', motif: '', note: '' });
+      const iFrom = ALL_ETAPES.indexOf(o.etape_funnel), iTo = ALL_ETAPES.indexOf(value);
+      if (iTo < iFrom && !CLOSED_STAGES.has(value)) return setStageDialog({ id, from: o.etape_funnel, to: value, kind: 'recul', motif: '', note: '' });
+      return applyStage(id, value);
+    }
+    setOpps(l => l.map(o => o.id === id ? { ...o, [field]: value, date_mise_a_jour: iso(NOW), clients: field === 'client_id' ? (CLIENTS[value] || null) : o.clients } : o)); toast({ title: 'Modification enregistrée', description: 'La valeur a été mise à jour avec succès.' });
+  };
+  // AMÉLIORATION (petit) : archivage proposé 30 jours après Gagnée / Perdue, jamais forcé
+  const toArchive = opps.filter(o => (o.etape_funnel === 'Gagnée' || o.etape_funnel === 'Perdue') && daysBetween(NOW, new Date((o.date_mise_a_jour || o.date_creation) + 'T12:00:00')) >= ARCHIVE_AFTER_DAYS);
+  const [archiveDismissed, setArchiveDismissed] = useState(false);
+  const archiveBanner = () => (archiveDismissed || toArchive.length === 0) ? null : h('div', { className: 'rounded-lg border-l-4 border-l-gray-400 bg-gray-50 p-4' },
+    h('div', { className: 'flex items-center justify-between' },
+      h('div', { className: 'flex items-center gap-3' }, h(I.Clock, { className: 'h-5 w-5 text-gray-500 shrink-0' }), h('div', null, h('p', { className: 'font-semibold text-sm text-gray-800' }, `${toArchive.length} opportunité${toArchive.length > 1 ? 's' : ''} conclue${toArchive.length > 1 ? 's' : ''} depuis plus de ${ARCHIVE_AFTER_DAYS} jours`), h('p', { className: 'text-xs text-gray-600' }, 'Archivage proposé — rien n’est archivé sans ton geste.'))),
+      h(Button, { variant: 'ghost', size: 'sm', onClick: () => setArchiveDismissed(true), className: 'h-7 px-2 text-gray-600', title: 'Masquer pour cette session' }, h(I.X, { className: 'h-4 w-4' }))),
+    h('div', { className: 'mt-3 space-y-1' }, ...toArchive.map(o => h('div', { key: o.id, className: 'flex items-center justify-between px-3 py-2 rounded-md text-sm hover:bg-gray-100' },
+      h('div', { className: 'flex items-center gap-2 min-w-0' }, h('span', { className: 'font-medium truncate cursor-pointer', onClick: () => setDetailId(o.id) }, o.nom_opportunite), o.clients && h('span', { className: 'text-xs text-gray-500 truncate' }, `— ${o.clients.nom}`), h(Badge, { variant: 'outline', className: `text-xs ${ETAPE_BADGE_COLORS[o.etape_funnel]}` }, o.etape_funnel)),
+      h('div', { className: 'flex items-center gap-2 shrink-0 ml-2' }, h('span', { className: 'text-xs text-gray-500' }, `${daysBetween(NOW, new Date((o.date_mise_a_jour || o.date_creation) + 'T12:00:00'))} j`), h(Button, { size: 'sm', variant: 'outline', className: 'h-7 px-2 text-xs', onClick: () => applyStage(o.id, 'Archivée') }, h(I.Archive ? I.Archive : I.Check, { className: 'h-3 w-3' }), 'Archiver'))))));
   const handleEtapeClick = e => updateFilter('etapes', filters.etapes.includes(e) ? filters.etapes.filter(x => x !== e) : [e]);
   const weighted = (v, p) => (v * p) / 100;
   const totalValue = filteredOpportunities.reduce((s, o) => s + (Number(o.valeur_estimee) || 0), 0);
   const totalWeighted = filteredOpportunities.reduce((s, o) => s + weighted(Number(o.valeur_estimee) || 0, o.probabilite_conversion || 0), 0);
-  const exportData = () => toast({ title: 'Export réussi', description: 'Les données ont été exportées en CSV' });
+  // AMÉLIORATION (petit) : export CSV complet (santé, source, responsable, date de clôture, motif de perte)
+  const exportData = () => {
+    const cols = ['Nom', 'Client', 'Étape', 'Santé', 'Responsable', 'Source', 'Valeur', 'Probabilité', 'Profit', 'Valeur pondérée', 'Date création', 'Date clôture', 'Motif de perte'];
+    const rows = filteredOpportunities.map(o => { const u = USERS.find(x => x.id === o.responsable_id); const hs = calculateHealthScore(o, LAST_INTERACTIONS.get(o.id)); return [o.nom_opportunite, o.clients?.nom || '', o.etape_funnel, `${hs.label} (${hs.score})`, u ? `${u.prenom} ${u.nom}` : '', o.source_opportunite || '', o.valeur_estimee, `${o.probabilite_conversion || 0}%`, `${o.profit_estime || 0}%`, weighted(Number(o.valeur_estimee) || 0, o.probabilite_conversion || 0), o.date_creation, o.date_cloture_estimee || '', o.motif_perte || ''].map(v => `"${String(v).replace(/"/g, '""')}"`).join(','); });
+    const csv = cols.join(',') + '\n' + rows.join('\n');
+    try { const a = document.createElement('a'); a.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv); a.download = 'opportunites.csv'; document.body.appendChild(a); a.click(); document.body.removeChild(a); } catch (e) {}
+    toast({ title: 'Export réussi', description: `${rows.length} ligne${rows.length > 1 ? 's' : ''}, ${cols.length} colonnes : ${cols.join(', ')}.` });
+  };
   const confirmDelete = () => { setOpps(l => l.filter(o => o.id !== toDelete.id)); toast({ title: 'Opportunité supprimée', description: `L'opportunité "${toDelete.nom_opportunite}" a été supprimée avec succès.` }); setToDelete(null); setDetailId(null); };
   const detail = opps.find(o => o.id === detailId);
   const dashboard = () => h(React.Fragment, null, h(OpportunityKPIs, { opportunities: filteredOpportunities }), h(OpportunityRevenueTimeline, { opportunities: filteredOpportunities }),
@@ -765,6 +810,7 @@ function OpportunitiesView({ toast }) {
       h(TabsTrigger, { active: activeView === 'list', onClick: () => setActiveView('list'), className: 'flex items-center gap-2' }, h(I.LayoutList, { className: 'h-4 w-4' }), 'Liste'),
       h(TabsTrigger, { active: activeView === 'table', onClick: () => setActiveView('table'), className: 'flex items-center gap-2' }, h(I.Table2, { className: 'h-4 w-4' }), 'Table'),
       h(TabsTrigger, { active: activeView === 'dashboard', onClick: () => setActiveView('dashboard'), className: 'flex items-center gap-2' }, h(I.BarChart3, { className: 'h-4 w-4' }), 'Dashboard'))),
+    activeView !== 'dashboard' && archiveBanner(),
     activeView === 'list' ? h(OpportunitiesListView, { opportunities: filteredOpportunities, users: USERS, onFieldUpdate: handleFieldUpdate, onOpenDetail: setDetailId })
     : activeView === 'dashboard' ? dashboard()
     : h(React.Fragment, null,
@@ -797,6 +843,13 @@ function OpportunitiesView({ toast }) {
     formOpen && h(OpportunityForm, { opportunity: editId ? opps.find(o => o.id === editId) : null, onClose: () => setFormOpen(false), onSubmit: f => { if (editId) { setOpps(l => l.map(o => o.id === editId ? { ...o, ...f, clients: CLIENTS[f.client_id] || null, date_mise_a_jour: iso(NOW) } : o)); toast({ title: 'Opportunité mise à jour' }); } else { setOpps(l => [mk('o' + Date.now(), { ...f, responsable_id: f.responsable_id || null, date_creation: iso(NOW), date_mise_a_jour: iso(NOW), date_cloture_estimee: f.date_cloture_estimee || null }), ...l]); toast({ title: 'Opportunité créée', description: `"${f.nom_opportunite}" a été ajoutée au pipeline.` }); } setFormOpen(false); } }),
     projectPrefill && h(Overlay, { onClose: () => setProjectPrefill(null), className: 'w-[95vw] max-w-lg p-6' }, h('h2', { className: 'text-lg font-semibold mb-2' }, 'Nouveau projet'), h('p', { className: 'text-sm text-gray-600 mb-4' }, 'Formulaire de projet pré-rempli depuis l’opportunité.'), h('div', { className: 'space-y-3' }, h('div', { className: 'space-y-2' }, h(Label, null, 'Nom'), h(Input, { defaultValue: projectPrefill.nom_opportunite })), h('div', { className: 'space-y-2' }, h(Label, null, 'Client'), h(Input, { defaultValue: projectPrefill.clients?.nom || '', readOnly: true })), h('div', { className: 'space-y-2' }, h(Label, null, 'Description'), h('textarea', { rows: 3, defaultValue: projectPrefill.description || '', className: 'flex w-full rounded-md border border-gray-200 px-3 py-2 text-sm' }))), h('div', { className: 'flex justify-end gap-2 mt-6' }, h(Button, { variant: 'outline', onClick: () => setProjectPrefill(null) }, 'Annuler'), h(Button, { onClick: () => { toast({ title: 'Projet créé', description: `Projet "${projectPrefill.nom_opportunite}" créé (exemple).` }); setProjectPrefill(null); } }, 'Créer le projet'))),
     detail && h(OpportunityDetailDialog, { opportunity: detail, users: USERS, onClose: () => setDetailId(null), onFieldUpdate: handleFieldUpdate, onDelete: setToDelete }),
+    stageDialog && h(Overlay, { onClose: () => setStageDialog(null), className: 'w-[95vw] max-w-lg p-6' },
+      h('h2', { className: 'text-lg font-semibold' }, stageDialog.kind === 'perdue' ? 'Marquer comme perdue' : `Reculer d’étape : ${stageDialog.from} → ${stageDialog.to}`),
+      h('p', { className: 'text-sm text-gray-500 mt-2' }, stageDialog.kind === 'perdue' ? 'Le motif est obligatoire : il nourrit les statistiques de perte.' : 'Une note est obligatoire pour revenir en arrière : elle reste dans l’historique.'),
+      stageDialog.kind === 'perdue' && h('div', { className: 'mt-4 space-y-2' }, h(Label, null, 'Motif de la perte'), h(Select, { value: stageDialog.motif, onChange: v => setStageDialog(d => ({ ...d, motif: v })), options: [{ value: '', label: 'Choisir un motif…' }, ...LOSS_REASONS.map(r => ({ value: r, label: r }))], className: 'w-full' })),
+      h('div', { className: 'mt-4 space-y-2' }, h(Label, null, stageDialog.kind === 'perdue' ? 'Note (facultative)' : 'Note (obligatoire)'), h('textarea', { rows: 3, value: stageDialog.note, onChange: e => setStageDialog(d => ({ ...d, note: e.target.value })), className: 'flex w-full rounded-md border border-gray-200 bg-white px-3 py-2 text-sm', placeholder: stageDialog.kind === 'perdue' ? 'Contexte, concurrent, prochaine occasion…' : 'Pourquoi on revient à cette étape' })),
+      h('div', { className: 'flex justify-end gap-2 mt-6' }, h(Button, { variant: 'outline', onClick: () => setStageDialog(null) }, 'Annuler'),
+        h(Button, { disabled: stageDialog.kind === 'perdue' ? !stageDialog.motif : !stageDialog.note.trim(), onClick: () => { applyStage(stageDialog.id, stageDialog.to, stageDialog.kind === 'perdue' ? { motif: stageDialog.motif, note: stageDialog.note.trim() || undefined } : { note: stageDialog.note.trim() }); setStageDialog(null); }, className: stageDialog.kind === 'perdue' ? 'bg-red-600 hover:bg-red-700 text-white' : '' }, 'Confirmer'))),
     toDelete && h(Overlay, { onClose: () => setToDelete(null), className: 'w-[95vw] max-w-lg p-6' },
       h('h2', { className: 'text-lg font-semibold' }, 'Confirmer la suppression'),
       h('p', { className: 'text-sm text-gray-500 mt-2' }, 'Êtes-vous sûr de vouloir supprimer l\'opportunité "', h('strong', null, toDelete.nom_opportunite), '" ?', h('br'), h('br'), 'Cette action est irréversible et supprimera définitivement toutes les données associées à cette opportunité.'),
