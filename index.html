@@ -608,7 +608,7 @@ function OpportunitiesListView({ opportunities, users, onFieldUpdate, onOpenDeta
             h(TD, { onClick: stop }, h(InlineEditNumber, { value: Number(opp.valeur_estimee) || 0, onSave: v => onFieldUpdate(opp.id, 'valeur_estimee', v), formatDisplay: v => `$${v.toLocaleString()} CAD`, min: 0, step: 100 })),
             h(TD, { onClick: stop }, h('div', { className: 'flex items-center gap-2' }, h(InlineEditNumber, { value: p, onSave: v => onFieldUpdate(opp.id, 'probabilite_conversion', v), suffix: '%', min: 0, max: 100, step: 5 }), h('div', { className: 'w-[50px] h-[5px] bg-gray-200 rounded-full overflow-hidden' }, h('div', { className: `h-full rounded-full transition-all ${getChaleurBarColor(p)}`, style: { width: p + '%' } })))),
             // AMÉLIORATION (petit) : dernière activité visible
-            h(TD, null, (() => { const li = LAST_INTERACTIONS.get(opp.id); if (!li) return h('span', { className: 'text-xs text-gray-400' }, 'Aucune'); const d = daysBetween(NOW, new Date(li + 'T12:00:00')); return h('span', { className: `text-xs ${d > 30 ? 'text-red-600 font-medium' : d > 14 ? 'text-orange-600' : 'text-gray-600'}` }, d === 0 ? "aujourd'hui" : `il y a ${d} j`); })()),
+            h(TD, null, (() => { const li = LAST_INTERACTIONS.get(opp.id); if (!li) return h('span', { className: 'text-xs text-gray-400' }, 'Aucune'); const d = Math.max(0, daysBetween(NOW, new Date(li + 'T12:00:00'))); return h('span', { className: `text-xs ${d > 30 ? 'text-red-600 font-medium' : d > 14 ? 'text-orange-600' : 'text-gray-600'}` }, d === 0 ? "aujourd'hui" : `il y a ${d} j`); })()),
             // AMÉLIORATION (petit) : date de clôture dépassée mise en évidence
             h(TD, { onClick: stop }, (() => { const over = opp.date_cloture_estimee && !CLOSED_STAGES.has(opp.etape_funnel) && daysBetween(NOW, new Date(opp.date_cloture_estimee + 'T12:00:00')) > 0; return h('div', { className: 'flex items-center gap-2' }, h('div', { className: over ? 'text-red-700' : '' }, h(InlineEditDate, { value: opp.date_cloture_estimee || null, onSave: v => onFieldUpdate(opp.id, 'date_cloture_estimee', v) })), over && h(Badge, { variant: 'outline', className: 'border-red-300 text-red-700 bg-red-50 text-[10px] whitespace-nowrap' }, `dépassée de ${daysBetween(NOW, new Date(opp.date_cloture_estimee + 'T12:00:00'))} j`)); })()),
             // AMÉLIORATION (petit) : colonne Entités réelle
@@ -645,7 +645,7 @@ function KanbanView({ opportunities, users, onFieldUpdate, onOpenDetail, etapes 
           ...items.map(o => {
             const health = calculateHealthScore(o, LAST_INTERACTIONS.get(o.id)); const p = o.probabilite_conversion ?? 0;
             const resp = users.find(u => u.id === o.responsable_id); const respName = resp ? `${resp.prenom} ${resp.nom}` : '';
-            const last = LAST_INTERACTIONS.get(o.id); const dl = last ? daysBetween(NOW, new Date(last + 'T12:00:00')) : null;
+            const last = LAST_INTERACTIONS.get(o.id); const dl = last ? Math.max(0, daysBetween(NOW, new Date(last + 'T12:00:00'))) : null;
             return h('div', { key: o.id, draggable: true, onDragStart: e => { setDragId(o.id); e.dataTransfer.effectAllowed = 'move'; }, onDragEnd: () => { setDragId(null); setOverCol(null); }, onClick: () => onOpenDetail(o.id),
                 className: `bg-white rounded-lg border border-gray-200 p-3 shadow-sm hover:shadow hover:border-blue-300 cursor-grab active:cursor-grabbing transition ${dragId === o.id ? 'opacity-50' : ''}` },
               h('div', { className: 'flex items-start justify-between gap-2' },
