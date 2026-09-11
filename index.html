@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Orbit — Opportunités (maquette)</title>
+  <title>Écran des opportunités — maquette (v6 titre bleu)</title>
   <script src="https://unpkg.com/react@18.3.1/umd/react.production.min.js" integrity="sha384-DGyLxAyjq0f9SPpVevD6IgztCFlnMF6oW/XQGmfe+IsZ8TqEiDrcHkMLKI6fiB/Z" crossorigin="anonymous"></script>
   <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.production.min.js" integrity="sha384-gTGxhz21lVGYNMcdJOyq01Edg0jhn/c22nsx0kyqP0TxaV5WVdsSH1fSDUf5YJj1" crossorigin="anonymous"></script>
   <script src="https://unpkg.com/prop-types@15.8.1/prop-types.min.js" integrity="sha384-/AfDwVDXNopzPvhxMPQ11y1OCpR6mVkWx47qzSwIiquvxkcMkZddEzDNtIOtfCpk" crossorigin="anonymous"></script>
@@ -912,7 +912,7 @@ function OpportunitiesView({ toast, onRappels, onOpenFromBell }) {
   useEffect(() => { if (onOpenFromBell) onOpenFromBell.current = setDetailId; }, []);
   return h('div', { className: 'p-6 space-y-6' },
     h('div', { className: 'flex justify-between items-center' },
-      h('div', null, h('h1', { className: 'text-3xl font-bold text-red-600' }, 'Pipeline Commercial'), h('p', { className: 'text-gray-600 mt-1' }, `Vision complète de vos opportunités • ${filteredOpportunities.length} sur ${opps.length} opportunités`)),
+      h('div', null, h('h1', { className: 'text-3xl font-bold text-blue-600' }, 'Pipeline Commercial'), h('p', { className: 'text-gray-600 mt-1' }, `Vision complète de vos opportunités • ${filteredOpportunities.length} sur ${opps.length} opportunités`)),
       h('div', { className: 'flex gap-2' }, h(Button, { variant: 'outline', onClick: exportData, className: 'flex items-center gap-2' }, h(I.Download, { className: 'h-4 w-4' }), 'Exporter'), h(Button, { onClick: () => { setEditId(null); setFormOpen(true); }, className: 'flex items-center gap-2' }, h(I.Plus, { className: 'h-4 w-4' }), 'Nouvelle opportunité'))),
     h('div', { className: 'w-full' }, h(TabsList, { className: 'grid w-full grid-cols-4 max-w-lg' },
       h(TabsTrigger, { active: activeView === 'list', onClick: () => setActiveView('list'), className: 'flex items-center gap-2' }, h(I.LayoutList, { className: 'h-4 w-4' }), 'Liste'),
